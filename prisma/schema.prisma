@@ -1,0 +1,88 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  SUPERADMIN
+  ADMIN
+  OWNER
+  MANAGER
+  BRANCH_MANAGER
+  WAITER
+  CHEF
+  CASHIER
+}
+
+enum UserStatus {
+  ACTIVE
+  PENDING
+  INACTIVE
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    Int
+  jti       String   @unique
+  tokenHash String
+  createdAt DateTime @default(now())
+  expiredAt DateTime
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model User {
+  id           Int  @id @default(autoincrement())
+  branchId     Int?
+
+  name         String
+  email        String?    @unique
+  passwordHash String?
+  role         UserRole   @default(WAITER)
+  status       UserStatus @default(PENDING)
+
+  username String?
+  pinHash  String?
+
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  verifiedAt  DateTime?
+
+  branch        Branch?        @relation(fields: [branchId], references: [id])
+  refreshTokens RefreshToken[]
+
+  @@unique([branchId, username])
+  @@index([branchId, role])
+  @@map("users")
+}
+
+model Branch {
+  id           Int     @id @default(autoincrement())
+  branchCode   String? @unique
+
+  name    String
+  address String?
+  phone   String?
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users      User[]
+
+  @@map("branches")
+}
