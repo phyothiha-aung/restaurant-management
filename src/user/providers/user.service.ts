@@ -54,19 +54,21 @@ export class UserService {
     }
 
     const filters: Prisma.UserWhereInput[] = [
-      {
-        role: { in: this.permission.manageableRoles(actor.role) },
-        ...(query.role && { role: query.role }),
-        ...(query.status && { status: query.status }),
-        ...(query.branchId && { branchId: query.branchId }),
-        ...(query.search && {
-          OR: [
-            { name: { contains: query.search, mode: 'insensitive' } },
-            { email: { contains: query.search, mode: 'insensitive' } },
-          ],
-        }),
-      },
+      { role: { in: this.permission.manageableRoles(actor.role) } },
     ];
+
+    if (query.role) filters.push({ role: query.role });
+    if (query.status) filters.push({ status: query.status });
+    if (query.branchId) filters.push({ branchId: query.branchId });
+    if (query.search) {
+      filters.push({
+        OR: [
+          { name: { contains: query.search, mode: 'insensitive' } },
+          { email: { contains: query.search, mode: 'insensitive' } },
+        ],
+      });
+    }
+
     if (!this.permission.isGlobalRole(actor.role)) {
       filters.push({ branchId: actor.branchId ?? -1 });
     }

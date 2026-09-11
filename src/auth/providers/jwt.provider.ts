@@ -3,7 +3,10 @@ import * as crypto from 'crypto';
 import type { ConfigType } from '@nestjs/config';
 import jwtConfig from '../config/jwt.config.js';
 import { JwtService } from '@nestjs/jwt';
-import { RefreshTokenProvider } from './refresh-token.provider.js';
+import {
+  RefreshTokenDraft,
+  RefreshTokenProvider,
+} from './refresh-token.provider.js';
 import { ActiveUserDto } from '../dtos/active-user.dto.js';
 import { User, UserRole } from '../../generated/prisma/client.js';
 import { TokenType } from '../constants/auth.constant.js';
@@ -51,6 +54,23 @@ export class JwtProvider {
     refreshToken: string;
     refreshTokenTtl: number;
   }> {
+    const tokens = await this.buildTokens(user);
+
+    await this.refreshTokenProvider.create(
+      tokens.refreshToken,
+      user.id,
+      tokens.jti,
+      tokens.expiredAt,
+    );
+
+    return {
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      refreshTokenTtl: tokens.refreshTokenTtl,
+    };
+  }
+
+  private async buildTokens(user: User): Promise<RefreshTokenDraft> {
     const refreshTokenJti = crypto.randomUUID();
 
     const adminRoles: UserRole[] = [UserRole.SUPERADMIN, UserRole.ADMIN];
@@ -79,17 +99,12 @@ export class JwtProvider {
     const expiredAt = new Date();
     expiredAt.setSeconds(expiredAt.getSeconds() + ttl);
 
-    await this.refreshTokenProvider.create(
-      refreshToken,
-      user.id,
-      refreshTokenJti,
-      expiredAt,
-    );
-
     return {
       accessToken,
       refreshToken,
       refreshTokenTtl: ttl,
+      jti: refreshTokenJti,
+      expiredAt,
     };
   }
 
@@ -106,19 +121,16 @@ export class JwtProvider {
       if (tokenType !== TokenType.REFRESH_TOKEN)
         throw new UnauthorizedException('Invalid token type');
 
-      const token = await this.refreshTokenProvider.findOne(
+      const tokens = await this.refreshTokenProvider.rotate(
         refreshToken,
         sub,
         jti,
+        (user) => this.buildTokens(user),
       );
 
-      if (!token) throw new UnauthorizedException('Refresh token not found');
+      if (!tokens) throw new UnauthorizedException('Refresh token not found');
 
-      if (!token.user) throw new UnauthorizedException('Invalid refresh token');
-
-      await this.refreshTokenProvider.deleteByJti(token.jti);
-
-      return this.generateTokens(token.user);
+      return tokens;
     } catch (error) {
       if (error instanceof UnauthorizedException) {
         throw error;
