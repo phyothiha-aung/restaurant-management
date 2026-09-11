@@ -10,3 +10,22 @@ export const ROLE_HIERARCHY: Record<UserRole, number> = {
   [UserRole.CHEF]: 50,
   [UserRole.WAITER]: 50,
 };
+
+export const GLOBAL_ROLES = new Set<UserRole>([
+  UserRole.SUPERADMIN,
+  UserRole.ADMIN,
+  UserRole.OWNER,
+  UserRole.MANAGER,
+]);
+
+export const USER_MANAGER_ROLES = new Set<UserRole>([
+  ...GLOBAL_ROLES,
+  UserRole.BRANCH_MANAGER,
+]);
+
+export const BRANCH_MANAGER_ROLES = new Set<UserRole>([
+  UserRole.SUPERADMIN,
+  UserRole.ADMIN,
+  UserRole.OWNER,
+  UserRole.MANAGER,
+]);

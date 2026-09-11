@@ -6,27 +6,13 @@ export const CreateUserSchema = z.object({
   name: z
     .string()
     .min(2, { message: 'Name must be at least 2 characters long' }),
-  email: z.email('Invalid email address').optional().nullable(),
-  password: z.string('Password is required').optional().nullable(),
+  email: z.email('Invalid email address'),
+  password: z
+    .string('Password is required')
+    .min(8, 'Password must be at least 8 characters long')
+    .max(72, 'Password cannot exceed 72 characters'),
   role: z.enum(UserRole).default(UserRole.WAITER),
   status: z.enum(UserStatus).default(UserStatus.PENDING),
-
-  username: z
-    .string()
-    .min(3, 'Username must be at least 3 characters long')
-    .max(30, 'Username cannot exceed 30 characters')
-    .regex(
-      /^[a-zA-Z0-9_]+$/,
-      'Username can only contain letters, numbers, and underscores',
-    )
-    .optional()
-    .nullable(),
-  pin: z
-    .string()
-    .regex(/^\d{4}$/, 'PIN must be 4 digits')
-    .optional()
-    .nullable(),
-
   branchId: z.number().int().positive().optional().nullable(),
 });
 

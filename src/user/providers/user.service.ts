@@ -3,186 +3,278 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
-  RequestTimeoutException,
 } from '@nestjs/common';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { HashingProvider } from '../../common/crypto/provider/hashing.provider.js';
+import { PaginationProvider } from '../../common/pagination/providers/pagination.provider.js';
 import { CreateUserDto } from '../dtos/create-user.dto.js';
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
-import { UpdateUserDto } from '../dtos/update-user-dto.js';
-import { UserRole } from '../../generated/prisma/enums.js';
-import { User } from '../../generated/prisma/client.js';
+import { UpdateUserDto } from '../dtos/update-user.dto.js';
+import { UpdateSelfDto } from '../dtos/update-self.dto.js';
+import { UserQueryDto } from '../dtos/user-query.dto.js';
+import { UserStatus } from '../../generated/prisma/enums.js';
+import type { Prisma, User } from '../../generated/prisma/client.js';
+import type { Request } from 'express';
 import { ActiveUserDto } from '../../auth/dtos/active-user.dto.js';
 import { PermissionProvider } from './permission.provider.js';
+
+const publicUserSelect = {
+  id: true,
+  branchId: true,
+  name: true,
+  email: true,
+  role: true,
+  status: true,
+  lastLoginAt: true,
+  createdAt: true,
+  updatedAt: true,
+  verifiedAt: true,
+  branch: {
+    select: { id: true, branchCode: true, name: true, isActive: true },
+  },
+} satisfies Prisma.UserSelect;
 
 @Injectable()
 export class UserService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly hashingProvider: HashingProvider,
-    private readonly permissionProvider: PermissionProvider,
+    private readonly hashing: HashingProvider,
+    private readonly permission: PermissionProvider,
+    private readonly pagination: PaginationProvider,
   ) {}
 
-  public async findAll() {
-    try {
-      return await this.prisma.user.findMany({
+  async findAll(
+    query: UserQueryDto,
+    activeUser: ActiveUserDto,
+    request: Request,
+  ) {
+    const actor = await this.requireUser(activeUser.sub);
+    if (!this.permission.isUserManager(actor.role)) {
+      throw new ForbiddenException('You do not have permission to list users');
+    }
+
+    const filters: Prisma.UserWhereInput[] = [
+      {
+        role: { in: this.permission.manageableRoles(actor.role) },
+        ...(query.role && { role: query.role }),
+        ...(query.status && { status: query.status }),
+        ...(query.branchId && { branchId: query.branchId }),
+        ...(query.search && {
+          OR: [
+            { name: { contains: query.search, mode: 'insensitive' } },
+            { email: { contains: query.search, mode: 'insensitive' } },
+          ],
+        }),
+      },
+    ];
+    if (!this.permission.isGlobalRole(actor.role)) {
+      filters.push({ branchId: actor.branchId ?? -1 });
+    }
+    const where: Prisma.UserWhereInput = { AND: filters };
+
+    return this.pagination.paginateQuery(
+      query,
+      this.prisma.user,
+      {
+        where,
+        select: publicUserSelect,
         orderBy: { createdAt: 'desc' },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          status: true,
-        },
-      });
-    } catch (_error) {
-      throw new RequestTimeoutException(
-        'Unable to process your request at the moment please try later',
-      );
-    }
+      },
+      request,
+    );
   }
 
-  public async findOneByEmail(email: string) {
-    try {
-      return await this.prisma.user.findUnique({ where: { email } });
-    } catch (_error) {
-      throw new RequestTimeoutException(
-        'Unable to process your request at the moment please try later',
-      );
-    }
+  async findOneByEmail(email: string) {
+    return this.prisma.user.findUnique({
+      where: { email },
+      include: { branch: true },
+    });
   }
 
-  public async findOneById(id: number) {
-    try {
-      return await this.prisma.user.findUnique({ where: { id } });
-    } catch (_error) {
-      throw new RequestTimeoutException('Error finding user in the database');
-    }
+  async findOneById(id: number) {
+    return this.prisma.user.findUnique({
+      where: { id },
+      include: { branch: true },
+    });
   }
 
-  public async findSanitizedUserById(id: number) {
+  async requireUser(id: number) {
     const user = await this.findOneById(id);
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-    return this.sanitizedUser(user);
+    if (!user) throw new NotFoundException('User not found');
+    return user;
   }
 
-  public async create(createUserDto: CreateUserDto) {
-    const { password, pin, ...data } = createUserDto;
+  async findMe(id: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: publicUserSelect,
+    });
+    if (!user) throw new NotFoundException('User not found');
+    return user;
+  }
 
-    let passwordHash: string | null = null;
-    let pinHash: string | null = null;
+  async findOneManaged(id: number, activeUser: ActiveUserDto) {
+    const [actor, target] = await Promise.all([
+      this.requireUser(activeUser.sub),
+      this.requireUser(id),
+    ]);
+    this.permission.assertCanManageUser(actor, target);
+    return this.findMe(target.id);
+  }
 
-    if (password) {
-      passwordHash = await this.hashingProvider.hashPassword(password);
-    }
+  async create(dto: CreateUserDto, activeUser: ActiveUserDto) {
+    const actor = await this.requireUser(activeUser.sub);
+    this.permission.assertCanAssignRole(actor, dto.role, dto.branchId ?? null);
+    await this.validateRoleAndBranch(dto.role, dto.branchId ?? null);
 
-    if (pin) {
-      pinHash = await this.hashingProvider.hashPassword(pin);
-    }
+    const passwordHash = await this.hashing.hashPassword(dto.password);
     try {
       return await this.prisma.user.create({
         data: {
-          ...data,
+          name: dto.name,
+          email: dto.email,
           passwordHash,
-          pinHash,
+          role: dto.role,
+          status: dto.status,
+          branchId: dto.branchId ?? null,
         },
+        select: publicUserSelect,
       });
     } catch (error) {
-      if (
-        error instanceof PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
-        throw new ConflictException(
-          'A user with this email or username already exists',
+      this.handlePrismaError(error);
+    }
+  }
+
+  async update(id: number, dto: UpdateUserDto, activeUser: ActiveUserDto) {
+    const [actor, target] = await Promise.all([
+      this.requireUser(activeUser.sub),
+      this.requireUser(id),
+    ]);
+    this.permission.assertCanManageUser(actor, target);
+
+    const role = dto.role ?? target.role;
+    const branchId = this.permission.isGlobalRole(role)
+      ? null
+      : dto.branchId === undefined
+        ? target.branchId
+        : dto.branchId;
+    this.permission.assertCanAssignRole(actor, role, branchId);
+    await this.validateRoleAndBranch(role, branchId);
+
+    const passwordHash = dto.password
+      ? await this.hashing.hashPassword(dto.password)
+      : undefined;
+    const { password: _password, branchId: _branchId, ...data } = dto;
+
+    try {
+      return await this.prisma.$transaction(async (transaction) => {
+        const updated = await transaction.user.update({
+          where: { id },
+          data: {
+            ...data,
+            branchId,
+            ...(passwordHash && { passwordHash }),
+          },
+          select: publicUserSelect,
+        });
+        if (passwordHash || dto.status === UserStatus.INACTIVE) {
+          await transaction.refreshToken.deleteMany({ where: { userId: id } });
+        }
+        return updated;
+      });
+    } catch (error) {
+      this.handlePrismaError(error);
+    }
+  }
+
+  async updateSelf(id: number, dto: UpdateSelfDto) {
+    await this.requireUser(id);
+    const passwordHash = dto.password
+      ? await this.hashing.hashPassword(dto.password)
+      : undefined;
+    try {
+      return await this.prisma.$transaction(async (transaction) => {
+        const updated = await transaction.user.update({
+          where: { id },
+          data: {
+            ...(dto.name && { name: dto.name }),
+            ...(passwordHash && { passwordHash }),
+          },
+          select: publicUserSelect,
+        });
+        if (passwordHash) {
+          await transaction.refreshToken.deleteMany({ where: { userId: id } });
+        }
+        return updated;
+      });
+    } catch (error) {
+      this.handlePrismaError(error);
+    }
+  }
+
+  async deactivate(id: number, activeUser: ActiveUserDto) {
+    const [actor, target] = await Promise.all([
+      this.requireUser(activeUser.sub),
+      this.requireUser(id),
+    ]);
+    this.permission.assertCanManageUser(actor, target);
+    if (target.status === UserStatus.INACTIVE) return this.findMe(target.id);
+
+    return this.prisma.$transaction(async (transaction) => {
+      const updated = await transaction.user.update({
+        where: { id },
+        data: { status: UserStatus.INACTIVE },
+        select: publicUserSelect,
+      });
+      await transaction.refreshToken.deleteMany({ where: { userId: id } });
+      return updated;
+    });
+  }
+
+  async updateLastLogin(id: number) {
+    return this.prisma.user.update({
+      where: { id },
+      data: { lastLoginAt: new Date() },
+      include: { branch: true },
+    });
+  }
+
+  sanitizedUser<T extends User>(user: T) {
+    const {
+      passwordHash: _passwordHash,
+      pinHash: _pinHash,
+      ...sanitized
+    } = user;
+    return sanitized;
+  }
+
+  private async validateRoleAndBranch(
+    role: User['role'],
+    branchId: number | null,
+  ) {
+    if (this.permission.isGlobalRole(role)) {
+      if (branchId !== null) {
+        throw new ForbiddenException(
+          'Restaurant-wide roles cannot have a branch',
         );
       }
-      throw new RequestTimeoutException('Error creating user in the database');
+      return;
     }
+    if (!branchId) throw new ForbiddenException('This role requires a branch');
+    const branch = await this.prisma.branch.findUnique({
+      where: { id: branchId },
+    });
+    if (!branch) throw new NotFoundException('Branch not found');
+    if (!branch.isActive) throw new ForbiddenException('Branch is inactive');
   }
 
-  public async update(
-    id: number,
-    updateUserDto: UpdateUserDto & { lastLoginAt?: Date; verifiedAt?: Date },
-  ) {
-    const { branchId, password, pin, ...data } = updateUserDto;
-
-    const passwordHash = password
-      ? await this.hashingProvider.hashPassword(password)
-      : undefined;
-
-    const pinHash = pin
-      ? await this.hashingProvider.hashPassword(pin)
-      : undefined;
-
-    try {
-      return await this.prisma.user.update({
-        where: { id },
-        data: {
-          ...data,
-          ...(passwordHash !== undefined && { passwordHash }),
-          ...(pinHash !== undefined && { pinHash }),
-          branch: branchId ? { connect: { id: branchId } } : undefined,
-        },
-      });
-    } catch (error) {
-      if (error instanceof PrismaClientKnownRequestError) {
-        if (error.code === 'P2025') {
-          throw new NotFoundException('User not found');
-        }
-        if (error.code === 'P2002') {
-          throw new ConflictException('A user with this email already exists');
-        }
+  private handlePrismaError(error: unknown): never {
+    if (error instanceof PrismaClientKnownRequestError) {
+      if (error.code === 'P2002') {
+        throw new ConflictException('A user with this email already exists');
       }
-      throw new RequestTimeoutException('Error updating user in the database');
+      if (error.code === 'P2025') throw new NotFoundException('User not found');
     }
-  }
-
-  public async delete(id: number, activeUser: ActiveUserDto) {
-    try {
-      const [actor, targetUser] = await Promise.all([
-        this.prisma.user.findUnique({ where: { id: activeUser.sub } }),
-        this.prisma.user.findUnique({ where: { id } }),
-      ]);
-
-      if (!actor || !targetUser) {
-        throw new ForbiddenException('Cannot delete user');
-      }
-
-      if (actor.id === targetUser.id) {
-        throw new ForbiddenException('Cannot delete user');
-      }
-
-      if (!this.permissionProvider.canManageRole(actor.role, targetUser.role)) {
-        throw new ForbiddenException('Cannot delete user');
-      }
-
-      this.permissionProvider.validateOwnership(actor, targetUser.branchId);
-    } catch (error) {
-      throw new RequestTimeoutException(
-        'Error deleting user from the database',
-      );
-    }
-
-    try {
-      await this.prisma.user.delete({ where: { id } });
-    } catch (error) {
-      if (error instanceof PrismaClientKnownRequestError) {
-        if (error.code === 'P2025') {
-          throw new ForbiddenException('Cannot delete user');
-        }
-      }
-      throw new RequestTimeoutException(
-        'Error deleting user from the database',
-      );
-    }
-  }
-
-  public sanitizedUser(user: User) {
-    const { passwordHash: _p, pinHash: _pin, ...sanitized } = user;
-
-    return sanitized;
+    throw error;
   }
 }

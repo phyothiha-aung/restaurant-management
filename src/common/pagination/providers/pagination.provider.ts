@@ -1,5 +1,4 @@
-import { Inject, Injectable, Scope } from '@nestjs/common';
-import { REQUEST } from '@nestjs/core';
+import { Injectable } from '@nestjs/common';
 import type { Request } from 'express';
 import { Paginated } from '../interfaces/paginated.interface.js';
 import { PaginationQueryDto } from '../dtos/pagination-query-dto.js';
@@ -9,17 +8,13 @@ export interface PrismaDelegate<T> {
   count: (args: any) => Promise<number>;
 }
 
-@Injectable({ scope: Scope.REQUEST })
+@Injectable()
 export class PaginationProvider {
-  constructor(
-    @Inject(REQUEST)
-    private readonly request: Request,
-  ) {}
-
   public async paginateQuery<T>(
     paginationQuery: PaginationQueryDto,
     model: PrismaDelegate<T>,
     args: { where?: any; select?: any; include?: any; orderBy?: any } = {},
+    request: Request,
   ): Promise<Paginated<T>> {
     const page = paginationQuery.page;
     const limit = paginationQuery.limit;
@@ -34,13 +29,19 @@ export class PaginationProvider {
       model.count({ where: args.where }),
     ]);
 
-    return this.buildPaginatedResponse(paginationQuery, results, totalItems);
+    return this.buildPaginatedResponse(
+      paginationQuery,
+      results,
+      totalItems,
+      request,
+    );
   }
 
   public async paginateRawQuery<T>(
     paginationQuery: PaginationQueryDto,
     fetchQueryFn: (skip: number, take: number) => Promise<T[]>,
     countQueryFn: () => Promise<number>,
+    request: Request,
   ): Promise<Paginated<T>> {
     const page = paginationQuery.page;
     const limit = paginationQuery.limit;
@@ -51,18 +52,24 @@ export class PaginationProvider {
       countQueryFn(),
     ]);
 
-    return this.buildPaginatedResponse(paginationQuery, results, totalItems);
+    return this.buildPaginatedResponse(
+      paginationQuery,
+      results,
+      totalItems,
+      request,
+    );
   }
 
   private buildPaginatedResponse<T>(
     paginationQuery: PaginationQueryDto,
     results: T[],
     totalItems: number,
+    request: Request,
   ): Paginated<T> {
-    const host = this.request.headers.host;
-    const protocol = this.request.protocol;
+    const host = request.headers.host;
+    const protocol = request.protocol;
     const baseURL = `${protocol}://${host}`;
-    const url = new URL(this.request.url ?? '', baseURL);
+    const url = new URL(request.url ?? '', baseURL);
 
     const totalPages = Math.ceil(totalItems / paginationQuery.limit) || 1;
     const nextPage =

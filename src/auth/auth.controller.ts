@@ -36,7 +36,11 @@ export class AuthController {
       maxAge: response['refreshTokenTtl'] * 1000,
     });
 
-    const { refreshToken, refreshTokenTtl, ...result } = response;
+    const {
+      refreshToken: _refreshToken,
+      refreshTokenTtl: _refreshTokenTtl,
+      ...result
+    } = response;
 
     return result;
   }

@@ -1,6 +1,7 @@
 import {
   CanActivate,
   ExecutionContext,
+  Inject,
   Injectable,
   ForbiddenException,
   UnauthorizedException,
@@ -23,7 +24,9 @@ export class AuthenticationGuard implements CanActivate {
     CanActivate | CanActivate[]
   >;
   constructor(
+    @Inject(Reflector)
     private readonly reflactor: Reflector,
+    @Inject(AccessTokenGuard)
     private readonly accessTokenGuard: AccessTokenGuard,
   ) {
     this.authTypeGuardMap = {

@@ -6,6 +6,7 @@ export const PaginationQuerySchema = z.object({
     .number()
     .int()
     .positive()
+    .max(100)
     .default(10)
     .describe('Number of records to return per page'),
   page: z.coerce

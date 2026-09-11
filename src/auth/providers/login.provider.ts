@@ -7,7 +7,7 @@ import { UserService } from '../../user/providers/user.service.js';
 import { HashingProvider } from '../../common/crypto/provider/hashing.provider.js';
 import { JwtProvider } from './jwt.provider.js';
 import { LoginDto } from '../dtos/login.dto.js';
-import { UserRole, UserStatus } from '../../generated/prisma/enums.js';
+import { UserStatus } from '../../generated/prisma/enums.js';
 
 @Injectable()
 export class LoginProvider {
@@ -26,9 +26,11 @@ export class LoginProvider {
       throw new ForbiddenException('User is not active');
     }
 
-    const updatedUser = await this.usersService.update(user.id, {
-      lastLoginAt: new Date(),
-    });
+    if (user.branchId && !user.branch?.isActive) {
+      throw new ForbiddenException('Branch is inactive');
+    }
+
+    const updatedUser = await this.usersService.updateLastLogin(user.id);
 
     // Generate JWT token
     const { accessToken, refreshToken, refreshTokenTtl } =
@@ -60,7 +62,7 @@ export class LoginProvider {
         loginDto.password,
         user.passwordHash,
       );
-    } catch (_error) {
+    } catch {
       throw new RequestTimeoutException('Could not verify password');
     }
 
