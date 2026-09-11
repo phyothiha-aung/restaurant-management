@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -46,5 +47,20 @@ export class UserController {
   @Roles(UserRole.SUPERADMIN, UserRole.ADMIN)
   public async findOne(@Param('id', ParseIntPipe) id: number) {
     return await this.userService.findSanitizedUserById(id);
+  }
+
+  @Delete(':id')
+  @Roles(
+    UserRole.SUPERADMIN,
+    UserRole.ADMIN,
+    UserRole.OWNER,
+    UserRole.MANAGER,
+    UserRole.BRANCH_MANAGER,
+  )
+  public async delete(
+    @Param('id', ParseIntPipe) id: number,
+    @ActiveUser() activeUser: ActiveUserDto,
+  ) {
+    return await this.userService.delete(id, activeUser);
   }
 }

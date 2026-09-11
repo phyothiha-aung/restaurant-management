@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
   RequestTimeoutException,
@@ -11,12 +12,15 @@ import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import { UpdateUserDto } from '../dtos/update-user-dto.js';
 import { UserRole } from '../../generated/prisma/enums.js';
 import { User } from '../../generated/prisma/client.js';
+import { ActiveUserDto } from '../../auth/dtos/active-user.dto.js';
+import { PermissionProvider } from './permission.provider.js';
 
 @Injectable()
 export class UserService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly hashingProvider: HashingProvider,
+    private readonly permissionProvider: PermissionProvider,
   ) {}
 
   public async findAll() {
@@ -136,13 +140,38 @@ export class UserService {
     }
   }
 
-  public async deleteManager(id: number) {
+  public async delete(id: number, activeUser: ActiveUserDto) {
     try {
-      await this.prisma.user.delete({ where: { id, role: UserRole.MANAGER } });
+      const [actor, targetUser] = await Promise.all([
+        this.prisma.user.findUnique({ where: { id: activeUser.sub } }),
+        this.prisma.user.findUnique({ where: { id } }),
+      ]);
+
+      if (!actor || !targetUser) {
+        throw new ForbiddenException('Cannot delete user');
+      }
+
+      if (actor.id === targetUser.id) {
+        throw new ForbiddenException('Cannot delete user');
+      }
+
+      if (!this.permissionProvider.canManageRole(actor.role, targetUser.role)) {
+        throw new ForbiddenException('Cannot delete user');
+      }
+
+      this.permissionProvider.validateOwnership(actor, targetUser.branchId);
+    } catch (error) {
+      throw new RequestTimeoutException(
+        'Error deleting user from the database',
+      );
+    }
+
+    try {
+      await this.prisma.user.delete({ where: { id } });
     } catch (error) {
       if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2025') {
-          throw new NotFoundException('User not found');
+          throw new ForbiddenException('Cannot delete user');
         }
       }
       throw new RequestTimeoutException(
