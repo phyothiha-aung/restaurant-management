@@ -13,7 +13,7 @@ export class RefreshTokenProvider {
   public async findOne(token: string, userId: number, jti: string) {
     const refreshToken = await this.prisma.refreshToken.findUnique({
       where: { jti },
-      include: { user: true },
+      include: { user: { include: { branch: true } } },
     });
 
     if (!refreshToken) return null;
@@ -45,6 +45,11 @@ export class RefreshTokenProvider {
       return null;
     }
 
+    if (refreshToken.user.branchId && !refreshToken.user.branch?.isActive) {
+      await this.prisma.refreshToken.delete({ where: { id: refreshToken.id } });
+      return null;
+    }
+
     return refreshToken;
   }
 
@@ -60,7 +65,7 @@ export class RefreshTokenProvider {
       return await this.prisma.refreshToken.create({
         data: { tokenHash: hashedToken, userId, jti, expiredAt },
       });
-    } catch (_error) {
+    } catch {
       throw new InternalServerErrorException('Error creating refresh token');
     }
   }
@@ -70,7 +75,7 @@ export class RefreshTokenProvider {
       await this.prisma.refreshToken.deleteMany({
         where: { jti },
       });
-    } catch (_error) {
+    } catch {
       throw new InternalServerErrorException('Error deleting refresh token');
     }
   }

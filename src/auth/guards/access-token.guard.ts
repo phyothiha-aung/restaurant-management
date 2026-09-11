@@ -12,7 +12,7 @@ import { REQUEST_USER_KEY, TokenType } from '../constants/auth.constant.js';
 import { UserStatus } from '../../generated/prisma/enums.js';
 
 export interface RequestWithUser extends Request {
-  user: ActiveUserDto;
+  [REQUEST_USER_KEY]: ActiveUserDto;
 }
 
 @Injectable()
@@ -46,6 +46,10 @@ export class AccessTokenGuard implements CanActivate {
       }
 
       if (user.status !== UserStatus.ACTIVE) {
+        throw new UnauthorizedException('Invalid token or expired');
+      }
+
+      if (user.branchId && !user.branch?.isActive) {
         throw new UnauthorizedException('Invalid token or expired');
       }
 

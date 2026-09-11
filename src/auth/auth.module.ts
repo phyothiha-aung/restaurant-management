@@ -8,15 +8,22 @@ import jwtConfig from './config/jwt.config.js';
 import { UserModule } from '../user/user.module.js';
 import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { AccessTokenGuard } from './guards/access-token.guard.js';
 
 @Module({
   controllers: [AuthController],
-  providers: [AuthService, LoginProvider, JwtProvider, RefreshTokenProvider],
+  providers: [
+    AuthService,
+    LoginProvider,
+    JwtProvider,
+    RefreshTokenProvider,
+    AccessTokenGuard,
+  ],
   imports: [
     UserModule,
     ConfigModule.forFeature(jwtConfig),
     JwtModule.registerAsync(jwtConfig.asProvider()),
   ],
-  exports: [AuthService],
+  exports: [AuthService, AccessTokenGuard],
 })
 export class AuthModule {}

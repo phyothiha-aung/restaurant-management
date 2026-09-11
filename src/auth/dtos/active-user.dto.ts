@@ -7,7 +7,6 @@ const ActiveUserSchema = z.object({
   sub: z.int().positive(),
   email: z.email('Invalid email address').nullable(),
   role: z.enum(UserRole),
-  restaurantId: z.int().positive().nullable(),
   tokenType: z.enum(TokenType),
   jti: z.string().optional(),
 });
