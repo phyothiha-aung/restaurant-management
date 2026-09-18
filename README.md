@@ -25,6 +25,64 @@
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
+## Authorization & branch access policy
+
+This application uses a branch-scoped authorization model with a clear separation between global management roles and branch-scoped operational roles.
+
+### Role hierarchy
+
+The role definitions are declared in [src/user/constants/user.constant.ts](src/user/constants/user.constant.ts) and enforced in [src/user/providers/permission.provider.ts](src/user/providers/permission.provider.ts).
+
+- Global and manager roles: SUPERADMIN, ADMIN, OWNER, MANAGER
+- Branch-scoped roles: BRANCH_MANAGER, CASHIER, CHEF, WAITER
+
+The role hierarchy is used to decide whether one role can manage another role and whether a role can assign users to a branch.
+
+### Branch visibility rules
+
+Branch access is intentionally scoped by branch ownership:
+
+- Global and manager-level roles can view all branches.
+- Branch-scoped users can only read and operate within their own assigned branch.
+- If a non-global user has no branch assigned, they are treated as having no valid branch scope and are denied access to branch-level operations.
+
+This rule is enforced in [src/branch/providers/branch.service.ts](src/branch/providers/branch.service.ts) by checking whether the requester is a global role before allowing unrestricted branch access.
+
+### User management rules
+
+User management is restricted to roles that can manage users:
+
+- GLOBAL/manager roles can create, list, update, and deactivate users within their permitted scope.
+- Branch-scoped users are not allowed to manage other users unless the role hierarchy explicitly permits it.
+- When a user is assigned a global role, the system disallows assigning a branch to that user.
+- When a user is assigned a branch-scoped role, the system requires a valid branch assignment.
+
+### Branch management rules
+
+Branch management is restricted to roles permitted to manage branches:
+
+- SUPERADMIN, ADMIN, OWNER, and MANAGER may create, update, and deactivate branches.
+- BRANCH_MANAGER is treated as a branch-scoped role for branch access, not as a global branch-management role.
+- Branch-scoped users can only view branch data for their own branch.
+
+### Route and service enforcement
+
+The current implementation separates route-level metadata and service-level logic:
+
+- Controller metadata declares the public route contract for endpoints in [src/branch/branch.controller.ts](src/branch/branch.controller.ts) and [src/user/user.controller.ts](src/user/user.controller.ts).
+- The service layer performs the actual branch-scope enforcement in [src/branch/providers/branch.service.ts](src/branch/providers/branch.service.ts) and user authorization checks in [src/user/providers/user.service.ts](src/user/providers/user.service.ts).
+
+This is intentional for the current business model: branch-scoped users should not see data outside their own branch, while higher-level roles retain broader access.
+
+### Operational note
+
+For future contributors, treat the service-layer access checks as the source of truth for branch-scoped behavior. If a new endpoint is added, it should follow the same pattern:
+
+1. validate the current user
+2. enforce branch scope for branch-scoped roles
+3. allow global roles to access broader data
+4. keep role assignment rules consistent with the hierarchy policy
+
 ## Project setup
 
 ```bash
