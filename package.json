@@ -2,6 +2,10 @@
   "name": "restaurant-management",
   "private": true,
   "version": "1.0.0",
+  "packageManager": "npm@11.18.0",
+  "engines": {
+    "node": "^22.22.3 || ^24.15.0 || >=26.0.0"
+  },
   "workspaces": [
     "apps/*",
     "packages/*"
