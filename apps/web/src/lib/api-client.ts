@@ -108,8 +108,7 @@ export const createApiClient = ({
     (response) => response,
     async (error: AxiosError) => {
       const originalRequest = error.config as
-        | RetryableRequestConfig
-        | undefined;
+        RetryableRequestConfig | undefined;
 
       if (!originalRequest) {
         return Promise.reject(error);
@@ -163,7 +162,7 @@ const apiClient = createApiClient({
   clearAuth: () => useAuthStore.getState().logout(),
   refreshAccessToken: () => requestRefreshToken(defaultBaseUrl),
   onAuthFailure: () => {
-    window.location.href = "/";
+    window.location.href = "/login";
   },
 });
 

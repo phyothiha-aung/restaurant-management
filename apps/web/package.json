@@ -10,13 +10,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@restaurant-management/shared": "*",
     "@hookform/resolvers": "^5.9.1",
+    "@restaurant-management/shared": "*",
     "@tanstack/react-query": "^5.103.1",
     "@tanstack/react-query-devtools": "^5.103.1",
     "axios": "^1.20.0",
     "crypto-js": "^4.2.0",
     "jwt-decode": "^4.0.0",
+    "lucide-react": "^1.47.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-hook-form": "^7.88.0",
@@ -26,12 +27,15 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
     "@types/crypto-js": "^4.2.2",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
+    "@tailwindcss/vite": "^4.1.13",
     "oxlint": "^1.81.0",
+    "tailwindcss": "^4.3.3",
     "typescript": "~6.0.2",
     "vite": "^8.3.0"
   }
