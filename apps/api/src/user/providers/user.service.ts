@@ -241,15 +241,6 @@ export class UserService {
     });
   }
 
-  sanitizedUser<T extends User>(user: T) {
-    const {
-      passwordHash: _passwordHash,
-      pinHash: _pinHash,
-      ...sanitized
-    } = user;
-    return sanitized;
-  }
-
   private async validateRoleAndBranch(
     role: User['role'],
     branchId: number | null,

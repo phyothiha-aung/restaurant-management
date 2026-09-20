@@ -37,7 +37,7 @@ export class LoginProvider {
       await this.jwtProvider.generateTokens(updatedUser);
 
     return {
-      user: this.usersService.sanitizedUser(updatedUser),
+      user: await this.usersService.findMe(updatedUser.id),
       accessToken,
       refreshToken,
       refreshTokenTtl,
