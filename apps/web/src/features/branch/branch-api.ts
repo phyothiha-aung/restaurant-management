@@ -23,7 +23,7 @@ export interface CreateBranchInput {
 }
 
 type AtLeastOne<T> = {
-  [Key in keyof T]-?: Pick<T, Key> & Partial<Omit<T, Key>>;
+  [Key in keyof T]-?: Required<Pick<T, Key>> & Partial<Omit<T, Key>>;
 }[keyof T];
 
 export type UpdateBranchInput = AtLeastOne<CreateBranchInput>;

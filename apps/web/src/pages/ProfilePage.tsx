@@ -18,13 +18,13 @@ export function ProfilePage() {
         action={<Badge tone={user.status === "ACTIVE" ? "success" : "neutral"}>{user.status}</Badge>}
       />
       <Card className="overflow-hidden">
-        <div className="h-24 bg-[var(--brand-red)]" />
+        <div className="h-24 bg-brand-red" />
         <div className="px-6 pb-7 sm:px-8">
-          <div className="-mt-10 grid h-20 w-20 place-items-center rounded-2xl border-4 border-white bg-[var(--brand-gold)] text-2xl font-extrabold text-[#3b2b08] shadow-md">
+          <div className="-mt-10 grid h-20 w-20 place-items-center rounded-2xl border-4 border-white bg-brand-gold text-2xl font-extrabold text-gold-ink shadow-md">
             {user.name.charAt(0).toUpperCase()}
           </div>
-          <h2 className="mt-4 font-[family-name:var(--font-heading)] text-2xl font-bold">{user.name}</h2>
-          <p className="mt-1 text-sm text-[var(--muted)]">{formatRole(user.role)}</p>
+          <h2 className="mt-4 font-heading text-2xl font-bold">{user.name}</h2>
+          <p className="mt-1 text-sm text-muted">{formatRole(user.role)}</p>
 
           <div className="mt-7 grid gap-3 sm:grid-cols-2">
             <ProfileDetail icon={Mail} label="Email" value={user.email ?? "Not available"} />
@@ -50,13 +50,13 @@ interface ProfileDetailProps {
 
 function ProfileDetail({ icon: Icon, label, value }: ProfileDetailProps) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-[var(--line-soft)] bg-[var(--surface)] p-4">
-      <div className="grid h-9 w-9 place-items-center rounded-lg bg-white text-[var(--brand-red)]">
+    <div className="flex items-center gap-3 rounded-xl border border-line-soft bg-surface p-4">
+      <div className="grid h-9 w-9 place-items-center rounded-lg bg-white text-brand-red">
         <Icon size={17} />
       </div>
       <div className="min-w-0">
-        <p className="text-xs font-semibold text-[var(--muted)]">{label}</p>
-        <p className="truncate text-sm font-bold text-[var(--ink)]">{value}</p>
+        <p className="text-xs font-semibold text-muted">{label}</p>
+        <p className="truncate text-sm font-bold text-ink">{value}</p>
       </div>
     </div>
   );

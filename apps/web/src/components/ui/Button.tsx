@@ -14,14 +14,14 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "bg-[var(--brand-red)] text-white shadow-sm hover:bg-[var(--brand-red-dark)]",
+    "bg-brand-red text-white shadow-sm hover:bg-brand-red-dark",
   secondary:
-    "bg-[var(--brand-gold)] text-[#33250b] shadow-sm hover:bg-[#c69825]",
+    "bg-brand-gold text-gold-ink shadow-sm hover:bg-brand-gold-dark",
   outline:
-    "border border-[var(--line)] bg-white text-[var(--ink)] hover:border-[var(--brand-gold)] hover:bg-[var(--brand-gold-soft)]",
+    "border border-line bg-white text-ink hover:border-brand-gold hover:bg-brand-gold-soft",
   ghost:
-    "bg-transparent text-[var(--muted)] hover:bg-[var(--line-soft)] hover:text-[var(--ink)]",
-  danger: "bg-[var(--danger)] text-white hover:bg-[#8f1c14]",
+    "bg-transparent text-muted hover:bg-line-soft hover:text-ink",
+  danger: "bg-danger text-white hover:bg-danger-dark",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -44,7 +44,7 @@ export function Button({
   return (
     <button
       type={type}
-      className={`inline-flex items-center justify-center gap-2 rounded-xl font-bold transition duration-150 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-gold)] disabled:cursor-not-allowed disabled:opacity-55 ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-xl font-bold transition duration-150 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-brand-gold disabled:cursor-not-allowed disabled:opacity-55 ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
       disabled={disabled || isLoading}
       {...props}
     >

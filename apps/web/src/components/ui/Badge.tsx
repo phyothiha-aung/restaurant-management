@@ -7,10 +7,10 @@ interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 }
 
 const toneClasses: Record<BadgeTone, string> = {
-  gold: "bg-[var(--brand-gold-soft)] text-[var(--brand-gold-dark)]",
-  red: "bg-[var(--brand-red-soft)] text-[var(--brand-red)]",
-  neutral: "bg-[var(--line-soft)] text-[var(--muted)]",
-  success: "bg-[#e9f7ef] text-[var(--success)]",
+  gold: "bg-brand-gold-soft text-brand-gold-dark",
+  red: "bg-brand-red-soft text-brand-red",
+  neutral: "bg-line-soft text-muted",
+  success: "bg-success-soft text-success",
 };
 
 export function Badge({ tone = "neutral", className = "", ...props }: BadgeProps) {

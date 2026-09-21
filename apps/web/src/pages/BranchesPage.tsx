@@ -31,11 +31,11 @@ export function BranchesPage() {
       />
       <Card className="grid min-h-72 place-items-center p-8 text-center">
         <div className="max-w-md">
-          <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-[var(--brand-red-soft)] text-[var(--brand-red)]">
+          <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-brand-red-soft text-brand-red">
             <Building2 size={22} />
           </div>
           <h2 className="mt-4 text-lg font-extrabold">Branch details are coming next</h2>
-          <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+          <p className="mt-2 text-sm leading-6 text-muted">
             This page is prepared for branch information, search, status filters, and management forms.
           </p>
         </div>

@@ -23,8 +23,19 @@ export function Sidebar({ onNavigate, onClose }: SidebarProps) {
   if (!user) return null;
 
   const navItems = [
-    { to: "/", label: "Overview", icon: LayoutDashboard, end: true, visible: true },
-    { to: "/users", label: "Users", icon: Users, visible: canManageUsers(user.role) },
+    {
+      to: "/",
+      label: "Overview",
+      icon: LayoutDashboard,
+      end: true,
+      visible: true,
+    },
+    {
+      to: "/users",
+      label: "Users",
+      icon: Users,
+      visible: canManageUsers(user.role),
+    },
     {
       to: "/branches",
       label: user.branchId ? "My Branch" : "Branches",
@@ -36,17 +47,17 @@ export function Sidebar({ onNavigate, onClose }: SidebarProps) {
 
   return (
     <div className="flex h-full flex-col bg-white">
-      <div className="flex h-20 items-center gap-3 border-b border-[var(--line-soft)] px-5">
+      <div className="flex h-20 items-center gap-3 border-b border-line-soft px-5">
         <img
-          className="h-11 w-11 rounded-full border-2 border-[var(--brand-gold)] object-cover"
+          className="h-11 w-11 rounded-full border-2 border-brand-gold object-cover"
           src="/icon.jpg"
           alt="Ann Htike logo"
         />
         <div className="min-w-0 flex-1">
-          <p className="truncate font-[family-name:var(--font-heading)] text-lg font-bold leading-tight text-[var(--ink)]">
+          <p className="truncate font-heading text-lg font-bold leading-tight text-ink">
             Ann Htike
           </p>
-          <p className="text-[0.68rem] font-bold uppercase tracking-[0.12em] text-[var(--brand-red)]">
+          <p className="text-[0.68rem] font-bold uppercase tracking-[0.12em] text-brand-red">
             Restaurant
           </p>
         </div>
@@ -63,8 +74,11 @@ export function Sidebar({ onNavigate, onClose }: SidebarProps) {
         )}
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-6" aria-label="Main navigation">
-        <p className="mb-3 px-3 text-[0.65rem] font-extrabold uppercase tracking-[0.16em] text-[var(--muted)]">
+      <nav
+        className="flex-1 space-y-1 overflow-y-auto px-3 py-6"
+        aria-label="Main navigation"
+      >
+        <p className="mb-3 px-3 text-[0.65rem] font-extrabold uppercase tracking-[0.16em] text-muted">
           Workspace
         </p>
         {navItems
@@ -80,8 +94,8 @@ export function Sidebar({ onNavigate, onClose }: SidebarProps) {
                 className={({ isActive }) =>
                   `group flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold transition ${
                     isActive
-                      ? "bg-[var(--brand-red-soft)] text-[var(--brand-red)]"
-                      : "text-[var(--muted)] hover:bg-[var(--line-soft)] hover:text-[var(--ink)]"
+                      ? "bg-brand-red-soft text-brand-red"
+                      : "text-muted hover:bg-line-soft hover:text-ink"
                   }`
                 }
               >
@@ -92,14 +106,18 @@ export function Sidebar({ onNavigate, onClose }: SidebarProps) {
           })}
       </nav>
 
-      <div className="border-t border-[var(--line-soft)] p-3">
-        <div className="mb-2 flex items-center gap-3 rounded-xl bg-[var(--surface)] p-3">
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--brand-gold)] text-sm font-extrabold text-[#382908]">
+      <div className="border-t border-line-soft p-3">
+        <div className="mb-2 flex items-center gap-3 rounded-xl bg-surface p-3">
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-gold text-sm font-extrabold text-gold-ink">
             {user.name.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0">
-            <p className="truncate text-sm font-bold text-[var(--ink)]">{user.name}</p>
-            <p className="truncate text-xs text-[var(--muted)]">{formatRole(user.role)}</p>
+            <p className="truncate text-sm font-bold text-ink">
+              {user.name}
+            </p>
+            <p className="truncate text-xs text-muted">
+              {formatRole(user.role)}
+            </p>
           </div>
         </div>
         <Button

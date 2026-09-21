@@ -18,11 +18,11 @@ export function UsersPage() {
       />
       <Card className="grid min-h-72 place-items-center p-8 text-center">
         <div className="max-w-md">
-          <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-[var(--brand-gold-soft)] text-[var(--brand-gold-dark)]">
+          <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-brand-gold-soft text-brand-gold-dark">
             <Users size={22} />
           </div>
           <h2 className="mt-4 text-lg font-extrabold">User management UI is next</h2>
-          <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+          <p className="mt-2 text-sm leading-6 text-muted">
             This page is ready for the searchable, filtered user list and account forms.
           </p>
         </div>
