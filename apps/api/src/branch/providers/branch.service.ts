@@ -16,6 +16,27 @@ import { BranchQueryDto } from '../dtos/branch-query.dto.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import type { Request } from 'express';
 
+const branchWithUserCountSelect = {
+  id: true,
+  branchCode: true,
+  name: true,
+  address: true,
+  phone: true,
+  isActive: true,
+  createdAt: true,
+  updatedAt: true,
+  _count: { select: { users: true } },
+} satisfies Prisma.BranchSelect;
+
+type BranchWithUserCount = Prisma.BranchGetPayload<{
+  select: typeof branchWithUserCountSelect;
+}>;
+
+const toBranchResponse = ({ _count, ...branch }: BranchWithUserCount) => ({
+  ...branch,
+  userCount: _count.users,
+});
+
 @Injectable()
 export class BranchService {
   constructor(
@@ -43,12 +64,24 @@ export class BranchService {
       }),
     };
 
-    return this.pagination.paginateQuery(
+    const result = await this.pagination.paginateRawQuery<BranchWithUserCount>(
       query,
-      this.prisma.branch,
-      { where, orderBy: { createdAt: 'desc' } },
+      (skip, take) =>
+        this.prisma.branch.findMany({
+          where,
+          select: branchWithUserCountSelect,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take,
+        }),
+      () => this.prisma.branch.count({ where }),
       request,
     );
+
+    return {
+      ...result,
+      data: result.data.map(toBranchResponse),
+    };
   }
 
   async findOne(id: number, activeUser: ActiveUserDto) {
@@ -57,15 +90,22 @@ export class BranchService {
       throw new NotFoundException('Branch not found');
     }
 
-    const branch = await this.prisma.branch.findUnique({ where: { id } });
+    const branch = await this.prisma.branch.findUnique({
+      where: { id },
+      select: branchWithUserCountSelect,
+    });
     if (!branch) throw new NotFoundException('Branch not found');
-    return branch;
+    return toBranchResponse(branch);
   }
 
   async create(dto: CreateBranchDto, activeUser: ActiveUserDto) {
     await this.requireBranchManager(activeUser.sub);
     try {
-      return await this.prisma.branch.create({ data: dto });
+      const branch = await this.prisma.branch.create({
+        data: dto,
+        select: branchWithUserCountSelect,
+      });
+      return toBranchResponse(branch);
     } catch (error) {
       this.handlePrismaError(error);
     }
@@ -75,7 +115,12 @@ export class BranchService {
     await this.requireBranchManager(activeUser.sub);
     await this.requireBranch(id);
     try {
-      return await this.prisma.branch.update({ where: { id }, data: dto });
+      const branch = await this.prisma.branch.update({
+        where: { id },
+        data: dto,
+        select: branchWithUserCountSelect,
+      });
+      return toBranchResponse(branch);
     } catch (error) {
       this.handlePrismaError(error);
     }
@@ -84,17 +129,18 @@ export class BranchService {
   async deactivate(id: number, activeUser: ActiveUserDto) {
     await this.requireBranchManager(activeUser.sub);
     const branch = await this.requireBranch(id);
-    if (!branch.isActive) return branch;
+    if (!branch.isActive) return toBranchResponse(branch);
 
     return this.prisma.$transaction(async (transaction) => {
       const updated = await transaction.branch.update({
         where: { id },
         data: { isActive: false },
+        select: branchWithUserCountSelect,
       });
       await transaction.refreshToken.deleteMany({
         where: { user: { branchId: id } },
       });
-      return updated;
+      return toBranchResponse(updated);
     });
   }
 
@@ -109,7 +155,10 @@ export class BranchService {
   }
 
   private async requireBranch(id: number) {
-    const branch = await this.prisma.branch.findUnique({ where: { id } });
+    const branch = await this.prisma.branch.findUnique({
+      where: { id },
+      select: branchWithUserCountSelect,
+    });
     if (!branch) throw new NotFoundException('Branch not found');
     return branch;
   }

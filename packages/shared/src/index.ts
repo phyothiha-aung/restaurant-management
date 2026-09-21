@@ -32,6 +32,7 @@ export interface BranchSummary {
 export interface Branch extends BranchSummary {
   address: string | null;
   phone: string | null;
+  userCount: number;
   createdAt: string;
   updatedAt: string;
 }

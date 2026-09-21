@@ -14,7 +14,7 @@ export const createEncryptedStorage = (
     try {
       const bytes = CryptoJS.AES.decrypt(value, encryptionKey);
       return bytes.toString(CryptoJS.enc.Utf8);
-    } catch (_error) {
+    } catch {
       return null;
     }
   },

@@ -44,7 +44,11 @@ export const useBranch = (id: number | null) =>
     enabled: id !== null && id > 0,
   });
 
-export const useCreateBranch = () => {
+interface BranchMutationOptions {
+  onSuccess?: (branch: Branch) => void;
+}
+
+export const useCreateBranch = (options: BranchMutationOptions = {}) => {
   const queryClient = useQueryClient();
 
   return useMutation<Branch, AxiosError<ApiErrorResponse>, CreateBranchInput>({
@@ -53,6 +57,7 @@ export const useCreateBranch = () => {
       await queryClient.invalidateQueries({ queryKey: branchKeys.lists() });
       queryClient.setQueryData(branchKeys.detail(branch.id), branch);
       toast.success("Branch created successfully.");
+      options.onSuccess?.(branch);
     },
     onError: (error) => {
       toast.error(getApiErrorMessage(error, "Could not create branch."));
@@ -65,7 +70,7 @@ interface UpdateBranchVariables {
   input: UpdateBranchInput;
 }
 
-export const useUpdateBranch = () => {
+export const useUpdateBranch = (options: BranchMutationOptions = {}) => {
   const queryClient = useQueryClient();
 
   return useMutation<Branch, AxiosError<ApiErrorResponse>, UpdateBranchVariables>({
@@ -74,6 +79,7 @@ export const useUpdateBranch = () => {
       queryClient.setQueryData(branchKeys.detail(branch.id), branch);
       await queryClient.invalidateQueries({ queryKey: branchKeys.lists() });
       toast.success("Branch updated successfully.");
+      options.onSuccess?.(branch);
     },
     onError: (error) => {
       toast.error(getApiErrorMessage(error, "Could not update branch."));
@@ -81,7 +87,7 @@ export const useUpdateBranch = () => {
   });
 };
 
-export const useDeactivateBranch = () => {
+export const useDeactivateBranch = (options: BranchMutationOptions = {}) => {
   const queryClient = useQueryClient();
 
   return useMutation<Branch, AxiosError<ApiErrorResponse>, number>({
@@ -90,6 +96,7 @@ export const useDeactivateBranch = () => {
       queryClient.setQueryData(branchKeys.detail(branch.id), branch);
       await queryClient.invalidateQueries({ queryKey: branchKeys.lists() });
       toast.success("Branch deactivated successfully.");
+      options.onSuccess?.(branch);
     },
     onError: (error) => {
       toast.error(getApiErrorMessage(error, "Could not deactivate branch."));
