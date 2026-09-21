@@ -214,6 +214,7 @@ export function BranchesPage() {
               currentPage={branchesQuery.data.meta.currentPage}
               totalPages={branchesQuery.data.meta.totalPages}
               totalItems={branchesQuery.data.meta.totalItems}
+              itemName="branch"
               disabled={branchesQuery.isFetching}
               onPageChange={updatePage}
             />

@@ -3,6 +3,7 @@ import {
   useId,
   type InputHTMLAttributes,
   type ReactNode,
+  type SelectHTMLAttributes,
   type TextareaHTMLAttributes,
 } from "react";
 
@@ -83,3 +84,33 @@ export const TextareaField = forwardRef<HTMLTextAreaElement, TextareaFieldProps>
 );
 
 TextareaField.displayName = "TextareaField";
+
+interface SelectFieldProps extends SelectHTMLAttributes<HTMLSelectElement> {
+  label: string;
+  error?: string;
+  hint?: string;
+  children: ReactNode;
+}
+
+export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(
+  ({ label, error, hint, id: providedId, className = "", children, ...props }, ref) => {
+    const generatedId = useId();
+    const id = providedId ?? generatedId;
+
+    return (
+      <FieldFrame id={id} label={label} error={error} hint={hint}>
+        <select
+          ref={ref}
+          id={id}
+          className={`min-h-11 w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm text-ink outline-none transition focus:border-brand-red focus:ring-4 focus:ring-brand-red-soft disabled:cursor-not-allowed disabled:bg-line-soft disabled:text-muted ${className}`}
+          aria-invalid={Boolean(error)}
+          {...props}
+        >
+          {children}
+        </select>
+      </FieldFrame>
+    );
+  },
+);
+
+SelectField.displayName = "SelectField";

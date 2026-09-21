@@ -6,6 +6,7 @@ import { UsersPage } from "./pages/UsersPage";
 import { BranchesPage } from "./pages/BranchesPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { useAuthStore } from "./store/useAuthStore";
+import { canManageUsers } from "./lib/user-display";
 
 export function AppRoutes() {
   return (
@@ -16,7 +17,9 @@ export function AppRoutes() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>
           <Route index element={<OverviewPage />} />
-          <Route path="users" element={<UsersPage />} />
+          <Route element={<ManagerOnlyRoute />}>
+            <Route path="users" element={<UsersPage />} />
+          </Route>
           <Route path="branches" element={<BranchesPage />} />
           <Route path="profile" element={<ProfilePage />} />
         </Route>
@@ -24,6 +27,11 @@ export function AppRoutes() {
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
+}
+
+function ManagerOnlyRoute() {
+  const user = useAuthStore((state) => state.user);
+  return user && canManageUsers(user.role) ? <Outlet /> : <Navigate to="/" replace />;
 }
 
 function ProtectedRoute() {
