@@ -29,6 +29,34 @@ export interface BranchSummary {
   isActive: boolean;
 }
 
+export interface Branch extends BranchSummary {
+  address: string | null;
+  phone: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PaginationMeta {
+  itemsPerPage: number;
+  totalItems: number;
+  currentPage: number;
+  totalPages: number;
+}
+
+export interface PaginationLinks {
+  first: string;
+  last: string;
+  current: string;
+  previous: string | null;
+  next: string | null;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: PaginationMeta;
+  links: PaginationLinks;
+}
+
 export interface User {
   id: number;
   branchId: number | null;
