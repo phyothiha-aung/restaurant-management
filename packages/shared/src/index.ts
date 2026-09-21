@@ -10,6 +10,18 @@ export type UserRole =
 
 export type UserStatus = "ACTIVE" | "INACTIVE" | "PENDING";
 
+export interface ApiSuccessResponse<T> {
+  success: true;
+  data: T;
+}
+
+export interface ApiErrorResponse {
+  success: false;
+  message: string | string[];
+  error: unknown | null;
+  statusCode: number;
+}
+
 export interface BranchSummary {
   id: number;
   branchCode: string | null;

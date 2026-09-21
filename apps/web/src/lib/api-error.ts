@@ -1,6 +1,5 @@
+import type { ApiErrorResponse } from "@restaurant-management/shared";
 import axios from "axios";
-
-import type { ApiErrorResponse } from "../types/error-response";
 
 export const getApiErrorMessage = (
   error: unknown,
@@ -22,5 +21,11 @@ export const getApiErrorMessage = (
     return "Unable to reach the server. Please check your connection.";
   }
 
-  return error.response.data?.message || fallback;
+  const message = error.response.data?.message;
+
+  if (Array.isArray(message)) {
+    return message.join(". ") || fallback;
+  }
+
+  return message || fallback;
 };

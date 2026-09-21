@@ -1,9 +1,11 @@
 import type { AxiosInstance } from "axios";
-import type { User } from "@restaurant-management/shared";
+import type {
+  ApiSuccessResponse,
+  User,
+} from "@restaurant-management/shared";
 
 import apiClient from "../../lib/api-client";
 import type { LoginType } from "../../lib/validations/login-schema";
-import type { ApiSuccessResponse } from "../../types/success-response";
 
 export type LoginResult = {
   user: User;

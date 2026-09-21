@@ -1,9 +1,9 @@
 import { useMutation } from "@tanstack/react-query";
+import type { ApiErrorResponse } from "@restaurant-management/shared";
 import type { AxiosError } from "axios";
 import { toast } from "react-toastify";
 
 import { useAuthStore } from "../../store/useAuthStore";
-import type { ApiErrorResponse } from "../../types/error-response";
 import type { LoginType } from "../../lib/validations/login-schema";
 import { getApiErrorMessage } from "../../lib/api-error";
 import { loginRequest, logoutRequest, type LoginResult } from "./auth-api";
@@ -27,7 +27,6 @@ export const logout = async () => {
     await logoutRequest();
   } catch (error) {
     toast.error(getApiErrorMessage(error, "Logout failed. Please try again."));
-    throw error;
   } finally {
     useAuthStore.getState().logout();
   }
