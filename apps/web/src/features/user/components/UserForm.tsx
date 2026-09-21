@@ -8,19 +8,10 @@ import type {
 import { useEffect, useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { Button } from "../../../components/ui/Button";
-import {
-  InputField,
-  SelectField,
-} from "../../../components/ui/FormField";
+import { InputField, SelectField } from "../../../components/ui/FormField";
 import { formatRole } from "../../../lib/user-display";
-import {
-  getManageableRoles,
-  isGlobalUserRole,
-} from "../user-options";
-import {
-  createUserFormSchema,
-  type UserFormValues,
-} from "../user-validation";
+import { getManageableRoles, isGlobalUserRole } from "../user-options";
+import { createUserFormSchema, type UserFormValues } from "../user-validation";
 
 export interface UserFormSubmission {
   name: string;
@@ -54,7 +45,8 @@ const getDefaultValues = (
     password: "",
     role,
     status: user?.status ?? "PENDING",
-    branchId: user?.branchId?.toString() ??
+    branchId:
+      user?.branchId?.toString() ??
       (!isGlobalUserRole(role) && firstActiveBranch
         ? firstActiveBranch.id.toString()
         : ""),
@@ -70,9 +62,15 @@ export function UserForm({
   onCancel,
   onSubmit,
 }: UserFormProps) {
-  const manageableRoles = useMemo(() => getManageableRoles(actorRole), [actorRole]);
+  const manageableRoles = useMemo(
+    () => getManageableRoles(actorRole),
+    [actorRole],
+  );
   const activeBranchIds = useMemo(
-    () => new Set(branches.filter((branch) => branch.isActive).map((branch) => branch.id)),
+    () =>
+      new Set(
+        branches.filter((branch) => branch.isActive).map((branch) => branch.id),
+      ),
     [branches],
   );
   const schema = useMemo(
@@ -107,9 +105,10 @@ export function UserForm({
     }
   }, [activeBranchIds, form, needsBranch]);
 
-  const statusOptions: UserStatus[] = user?.status === "INACTIVE"
-    ? ["INACTIVE", "ACTIVE", "PENDING"]
-    : ["PENDING", "ACTIVE"];
+  const statusOptions: UserStatus[] =
+    user?.status === "INACTIVE"
+      ? ["INACTIVE", "ACTIVE", "PENDING"]
+      : ["PENDING", "ACTIVE"];
 
   const submit = (values: UserFormValues) => {
     onSubmit({
@@ -123,7 +122,11 @@ export function UserForm({
   };
 
   return (
-    <form className="grid gap-5" onSubmit={form.handleSubmit(submit)} noValidate>
+    <form
+      className="grid gap-5"
+      onSubmit={form.handleSubmit(submit)}
+      noValidate
+    >
       <InputField
         label="Full name"
         placeholder="Staff member name"
@@ -141,14 +144,20 @@ export function UserForm({
       />
       <InputField
         label={user ? "New password" : "Password"}
-        placeholder={user ? "Leave blank to keep current password" : "At least 8 characters"}
+        placeholder={
+          user
+            ? "Leave blank to keep current password"
+            : "At least 8 characters"
+        }
         type="password"
         autoComplete="new-password"
-        hint={user ? "Only enter a password when it should be changed." : undefined}
+        hint={
+          user ? "Only enter a password when it should be changed." : undefined
+        }
         error={form.formState.errors.password?.message}
         {...form.register("password")}
       />
-      <div className="grid gap-5 sm:grid-cols-2">
+      <div className="grid gap-5 sm:grid-cols-2 items-start">
         <SelectField
           label="Role"
           error={form.formState.errors.role?.message}
@@ -191,8 +200,13 @@ export function UserForm({
         >
           <option value="">Select a branch</option>
           {availableBranches.map((branch) => (
-            <option value={branch.id} disabled={!branch.isActive} key={branch.id}>
-              {branch.name}{branch.isActive ? "" : " (Inactive)"}
+            <option
+              value={branch.id}
+              disabled={!branch.isActive}
+              key={branch.id}
+            >
+              {branch.name}
+              {branch.isActive ? "" : " (Inactive)"}
             </option>
           ))}
         </SelectField>

@@ -1,12 +1,28 @@
-import { Building2, Mail, ShieldCheck, UserRound } from "lucide-react";
+import {
+  Building2,
+  Edit3,
+  Mail,
+  RefreshCw,
+  ShieldCheck,
+  UserRound,
+} from "lucide-react";
+import { useState } from "react";
 import { Badge } from "../components/ui/Badge";
+import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { PageHeader } from "../components/ui/PageHeader";
+import { ProfileDrawer } from "../features/profile/components/ProfileDrawer";
+import { useProfile } from "../features/profile/profile-services";
+import { getApiErrorMessage } from "../lib/api-error";
 import { formatRole } from "../lib/user-display";
 import { useAuthStore } from "../store/useAuthStore";
 
 export function ProfilePage() {
-  const user = useAuthStore((state) => state.user);
+  const storedUser = useAuthStore((state) => state.user);
+  const profileQuery = useProfile();
+  const [isEditing, setIsEditing] = useState(false);
+  const user = profileQuery.data ?? storedUser;
+
   if (!user) return null;
 
   return (
@@ -15,8 +31,35 @@ export function ProfilePage() {
         eyebrow="Account"
         title="My Profile"
         description="Your account identity and current restaurant access."
-        action={<Badge tone={user.status === "ACTIVE" ? "success" : "neutral"}>{user.status}</Badge>}
+        action={
+          <div className="flex items-center gap-3">
+            <Badge tone={user.status === "ACTIVE" ? "success" : "neutral"}>
+              {user.status}
+            </Badge>
+            <Button variant="outline" onClick={() => setIsEditing(true)}>
+              <Edit3 size={16} /> Edit profile
+            </Button>
+          </div>
+        }
       />
+
+      {profileQuery.isError && (
+        <div className="flex flex-col gap-3 rounded-2xl border border-danger/20 bg-brand-red-soft p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-bold text-danger">Profile refresh failed</p>
+            <p className="mt-1 text-xs text-muted">
+              {getApiErrorMessage(
+                profileQuery.error,
+                "Showing your last saved profile information.",
+              )}
+            </p>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => void profileQuery.refetch()}>
+            <RefreshCw size={15} /> Retry
+          </Button>
+        </div>
+      )}
+
       <Card className="overflow-hidden">
         <div className="h-24 bg-brand-red" />
         <div className="px-6 pb-7 sm:px-8">
@@ -38,6 +81,8 @@ export function ProfilePage() {
           </div>
         </div>
       </Card>
+
+      <ProfileDrawer open={isEditing} user={user} onClose={() => setIsEditing(false)} />
     </div>
   );
 }
