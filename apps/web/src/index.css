@@ -2,13 +2,22 @@
 @import "tailwindcss";
 
 :root {
-  --surface: #f7f3eb;
-  --ink: #252824;
-  --muted: #77766e;
-  --accent: #ebba79;
-  --accent-strong: #c16641;
-  --line: #ddd8ce;
-  --line-soft: #ebe5db;
+  --brand-red: #c8102e;
+  --brand-red-dark: #9f0d24;
+  --brand-red-soft: #fff0f2;
+  --brand-gold: #d8a72e;
+  --brand-gold-dark: #9a7112;
+  --brand-gold-soft: #fff7dc;
+  --surface: #f8f7f4;
+  --surface-raised: #ffffff;
+  --ink: #292324;
+  --muted: #746d6e;
+  --line: #e5e0dc;
+  --line-soft: #f0ece8;
+  --danger: #b42318;
+  --success: #217a4a;
+  --sidebar-width: 15rem;
+  --shadow-card: 0 14px 40px rgba(67, 49, 52, 0.07);
   font-family: "DM Sans", "Helvetica Neue", sans-serif;
   color: var(--ink);
   background: var(--surface);
@@ -27,4 +36,20 @@ body,
 
 body {
   min-height: 100svh;
+}
+
+button,
+a,
+input {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a {
+  outline-color: var(--brand-gold);
+}
+
+::selection {
+  color: white;
+  background: var(--brand-red);
 }
