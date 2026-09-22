@@ -1,9 +1,14 @@
 import { z } from './common/lib/zod.js';
 
+const optionalCredential = z.preprocess(
+  (value) => (value === '' ? undefined : value),
+  z.string().min(1).optional(),
+);
+
 export default z.object({
   NODE_ENV: z
     .enum(['development', 'production', 'test', 'staging', 'uat'])
-    .default('production'),
+    .default('development'),
 
   PORT: z.coerce.number().int().min(1).max(65535).default(3001),
   DATABASE_URL: z.string().min(1),
@@ -20,4 +25,17 @@ export default z.object({
     .int()
     .positive()
     .default(86400),
+
+  AWS_REGION: z.string().min(1),
+  AWS_S3_BUCKET: z.string().min(1),
+  AWS_ACCESS_KEY_ID: optionalCredential,
+  AWS_SECRET_ACCESS_KEY: optionalCredential,
+}).superRefine((value, context) => {
+  if (Boolean(value.AWS_ACCESS_KEY_ID) !== Boolean(value.AWS_SECRET_ACCESS_KEY)) {
+    context.addIssue({
+      code: 'custom',
+      path: ['AWS_ACCESS_KEY_ID'],
+      message: 'AWS access key ID and secret access key must be provided together',
+    });
+  }
 });

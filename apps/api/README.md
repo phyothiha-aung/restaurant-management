@@ -89,6 +89,23 @@ For future contributors, treat the service-layer access checks as the source of 
 $ npm install
 ```
 
+## Private S3 attachments
+
+Expense attachments are uploaded directly from the browser with API-issued
+presigned POST data. The bucket must remain private. Object keys are generated
+by the API as `{environment}/{resource}/{fileId}/{filename}`, for example
+`production/expenses/<file-id>/receipt.pdf`.
+
+Set `AWS_REGION` and `AWS_S3_BUCKET`. For local or non-AWS hosting, also set
+both `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`. Leave both credential
+variables blank when an IAM task, instance, or workload role is available.
+
+Apply [config/s3-cors.example.json](config/s3-cors.example.json) to the bucket,
+replacing the origin with the deployed frontend URL. Apply
+[config/s3-lifecycle.example.json](config/s3-lifecycle.example.json) to remove
+uploads that remain tagged as pending for one day. Configure default bucket
+encryption and block all public access in AWS.
+
 ## Compile and run the project
 
 ```bash

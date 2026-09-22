@@ -20,6 +20,9 @@ import { CreateExpenseDto } from './dtos/create-expense.dto.js';
 import { UpdateExpenseDto } from './dtos/update-expense.dto.js';
 import { VoidExpenseDto } from './dtos/void-expense.dto.js';
 import { ExpenseQueryDto } from './dtos/expense-query.dto.js';
+import { ExpenseAttachmentService } from './providers/expense-attachment.service.js';
+import { PresignExpenseAttachmentDto } from './dtos/presign-expense-attachment.dto.js';
+import { AddExpenseAttachmentsDto } from './dtos/add-expense-attachments.dto.js';
 
 const expenseManagerRoles = [
   UserRole.SUPERADMIN,
@@ -32,7 +35,44 @@ const expenseManagerRoles = [
 @Controller('expenses')
 @Roles(...expenseManagerRoles)
 export class ExpenseController {
-  constructor(private readonly expenses: ExpenseService) {}
+  constructor(
+    private readonly expenses: ExpenseService,
+    private readonly attachments: ExpenseAttachmentService,
+  ) {}
+
+  @Post('attachments/presign')
+  presignAttachment(
+    @Body() dto: PresignExpenseAttachmentDto,
+    @ActiveUser() user: ActiveUserDto,
+  ) {
+    return this.attachments.presign(dto, user);
+  }
+
+  @Post('attachments/:fileId/complete')
+  completeAttachment(
+    @Param('fileId') fileId: string,
+    @ActiveUser() user: ActiveUserDto,
+  ) {
+    return this.attachments.complete(fileId, user);
+  }
+
+  @Post(':id/attachments')
+  attachFiles(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: AddExpenseAttachmentsDto,
+    @ActiveUser() user: ActiveUserDto,
+  ) {
+    return this.attachments.attach(id, dto, user);
+  }
+
+  @Get(':id/attachments/:attachmentId/access-url')
+  attachmentAccessUrl(
+    @Param('id', ParseIntPipe) id: number,
+    @Param('attachmentId', ParseIntPipe) attachmentId: number,
+    @ActiveUser() user: ActiveUserDto,
+  ) {
+    return this.attachments.accessUrl(id, attachmentId, user);
+  }
 
   @Get()
   findAll(

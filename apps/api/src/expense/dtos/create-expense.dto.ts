@@ -5,6 +5,7 @@ import {
   ExpenseAmountSchema,
   ExpenseDateSchema,
 } from './expense-validation.js';
+import { AttachmentIdsSchema } from './add-expense-attachments.dto.js';
 
 export const CreateExpenseSchema = z.object({
   title: z.string().trim().min(2).max(100),
@@ -13,6 +14,7 @@ export const CreateExpenseSchema = z.object({
   amount: ExpenseAmountSchema,
   expenseDate: ExpenseDateSchema,
   branchId: z.number().int().positive().optional().nullable(),
+  attachmentIds: AttachmentIdsSchema.optional(),
 });
 
 export class CreateExpenseDto extends createZodDto(CreateExpenseSchema) {}

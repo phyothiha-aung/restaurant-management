@@ -33,6 +33,8 @@ const expense = {
   createdBy: { id: actor.id, name: 'Manager' },
   updatedBy: { id: actor.id, name: 'Manager' },
   voidedBy: null,
+  _count: { attachments: 0 },
+  attachments: [],
 };
 
 const createService = (overrides: Record<string, unknown> = {}) => {
@@ -69,10 +71,21 @@ const createService = (overrides: Record<string, unknown> = {}) => {
     isGlobalRole: vi.fn((role) => role !== UserRole.BRANCH_MANAGER),
   };
   const users: any = { requireUser: vi.fn().mockResolvedValue(actor) };
+  const expenseAttachments: any = {
+    prepareFiles: vi.fn().mockResolvedValue([]),
+    retainFiles: vi.fn().mockResolvedValue(undefined),
+  };
 
   return {
-    service: new ExpenseService(prisma, pagination, permission, users),
+    service: new ExpenseService(
+      prisma,
+      pagination,
+      permission,
+      users,
+      expenseAttachments,
+    ),
     prisma,
+    expenseAttachments,
   };
 };
 

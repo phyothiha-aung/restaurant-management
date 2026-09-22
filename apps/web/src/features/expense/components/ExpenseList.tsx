@@ -7,6 +7,7 @@ import {
   MoreHorizontal,
   ReceiptText,
   XCircle,
+  Paperclip,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { Badge } from "../../../components/ui/Badge";
@@ -69,7 +70,7 @@ export function ExpenseList({
                         {expense.title}
                       </span>
                       <span className="mt-1 block text-xs text-muted">
-                        {formatExpenseCategory(expense.category)}
+                        {formatExpenseCategory(expense.category)} · {expense.attachmentCount} file{expense.attachmentCount === 1 ? "" : "s"}
                       </span>
                     </button>
                   </td>
@@ -145,6 +146,10 @@ export function ExpenseList({
                 <p className="flex items-center gap-2">
                   <Building2 className="shrink-0" size={14} />
                   {expense.branch?.name ?? "Restaurant-wide"}
+                </p>
+                <p className="flex items-center gap-2">
+                  <Paperclip className="shrink-0" size={14} />
+                  {expense.attachmentCount} attachment{expense.attachmentCount === 1 ? "" : "s"}
                 </p>
                 <p>Updated {dateFormatter.format(new Date(expense.updatedAt))}</p>
               </div>

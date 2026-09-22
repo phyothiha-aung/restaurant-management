@@ -1,5 +1,11 @@
 import type { Expense, ExpenseStatus } from "@restaurant-management/shared";
 import { Badge } from "../../../components/ui/Badge";
+import { Button } from "../../../components/ui/Button";
+import { Download, FileText, Image } from "lucide-react";
+import { useState } from "react";
+import { toast } from "react-toastify";
+import { getApiErrorMessage } from "../../../lib/api-error";
+import { getExpenseAttachmentAccessUrl } from "../expense-api";
 import {
   formatExpenseAmount,
   formatExpenseCategory,
@@ -17,6 +23,24 @@ const statusTone: Record<ExpenseStatus, "success" | "neutral"> = {
 };
 
 export function ExpenseDetails({ expense }: { expense: Expense }) {
+  const [openingAttachmentId, setOpeningAttachmentId] = useState<number | null>(null);
+
+  const openAttachment = async (attachmentId: number) => {
+    const preview = window.open("about:blank", "_blank");
+    if (preview) preview.opener = null;
+    setOpeningAttachmentId(attachmentId);
+    try {
+      const access = await getExpenseAttachmentAccessUrl(expense.id, attachmentId);
+      if (preview) preview.location.href = access.url;
+      else window.open(access.url, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      preview?.close();
+      toast.error(getApiErrorMessage(error, "Could not open attachment."));
+    } finally {
+      setOpeningAttachmentId(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border border-line bg-surface p-5">
@@ -45,6 +69,49 @@ export function ExpenseDetails({ expense }: { expense: Expense }) {
         <Detail label="Last updated by" value={expense.updatedBy.name} />
         <Detail label="Last updated" value={dateTimeFormatter.format(new Date(expense.updatedAt))} />
       </dl>
+
+      <section>
+        <h4 className="text-xs font-extrabold uppercase tracking-wide text-muted">
+          Attachments ({expense.attachmentCount})
+        </h4>
+        {expense.attachments.length === 0 ? (
+          <p className="mt-3 rounded-xl border border-line bg-surface p-4 text-sm text-muted">
+            No files are attached to this expense.
+          </p>
+        ) : (
+          <ul className="mt-3 grid gap-2">
+            {expense.attachments.map((attachment) => (
+              <li
+                className="flex items-center gap-3 rounded-xl border border-line p-3"
+                key={attachment.id}
+              >
+                {attachment.mimeType === "application/pdf" ? (
+                  <FileText className="shrink-0 text-brand-red" size={20} />
+                ) : (
+                  <Image className="shrink-0 text-brand-red" size={20} />
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-bold text-ink">
+                    {attachment.originalName}
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted">
+                    {(attachment.sizeBytes / 1024 / 1024).toFixed(2)} MB · Added by {attachment.attachedBy.name}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  isLoading={openingAttachmentId === attachment.id}
+                  loadingLabel="Opening..."
+                  onClick={() => void openAttachment(attachment.id)}
+                >
+                  <Download size={15} /> Open
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       {expense.status === "VOIDED" && (
         <div className="rounded-2xl border border-danger/20 bg-brand-red-soft p-5">

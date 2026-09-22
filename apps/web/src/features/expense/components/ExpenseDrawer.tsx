@@ -6,6 +6,7 @@ import { getApiErrorMessage } from "../../../lib/api-error";
 import type { CreateExpenseInput } from "../expense-api";
 import {
   useCreateExpense,
+  useAttachExpenseFiles,
   useExpense,
   useUpdateExpense,
 } from "../expense-services";
@@ -39,9 +40,11 @@ export function ExpenseDrawer({
 }: ExpenseDrawerProps) {
   const detail = useExpense(mode === "create" || !open ? null : expenseId);
   const createMutation = useCreateExpense({ onSuccess: onClose });
-  const updateMutation = useUpdateExpense({ onSuccess: onClose });
+  const updateMutation = useUpdateExpense();
+  const attachMutation = useAttachExpenseFiles({ onSuccess: onClose });
   const expense = detail.data;
-  const isSaving = createMutation.isPending || updateMutation.isPending;
+  const isSaving =
+    createMutation.isPending || updateMutation.isPending || attachMutation.isPending;
 
   const title =
     mode === "create"
@@ -61,7 +64,21 @@ export function ExpenseDrawer({
       createMutation.mutate(input);
       return;
     }
-    if (expenseId) updateMutation.mutate({ id: expenseId, input });
+    if (expenseId) {
+      const { attachmentIds = [], ...expenseInput } = input;
+      updateMutation.mutate(
+        { id: expenseId, input: expenseInput },
+        {
+          onSuccess: () => {
+            if (attachmentIds.length > 0) {
+              attachMutation.mutate({ id: expenseId, attachmentIds });
+            } else {
+              onClose();
+            }
+          },
+        },
+      );
+    }
   };
 
   const handleClose = () => {
@@ -89,6 +106,7 @@ export function ExpenseDrawer({
     >
       {mode === "create" ? (
         <ExpenseForm
+          key={open ? "create-open" : "create-closed"}
           actor={actor}
           branches={branches}
           branchesLoading={branchesLoading}
@@ -110,11 +128,12 @@ export function ExpenseDrawer({
         </div>
       ) : expense && mode === "edit" ? (
         <ExpenseForm
+          key={open ? `edit-${expense.id}-open` : `edit-${expense.id}-closed`}
           actor={actor}
           branches={branches}
           branchesLoading={branchesLoading}
           expense={expense}
-          isLoading={updateMutation.isPending}
+          isLoading={updateMutation.isPending || attachMutation.isPending}
           onCancel={handleClose}
           onSubmit={handleSubmit}
         />

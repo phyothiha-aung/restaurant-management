@@ -1,14 +1,16 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import type { Branch, Expense, User } from "@restaurant-management/shared";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "../../../components/ui/Button";
+import { AttachmentPicker } from "../../../components/ui/AttachmentPicker";
 import {
   InputField,
   SelectField,
   TextareaField,
 } from "../../../components/ui/FormField";
 import type { CreateExpenseInput } from "../expense-api";
+import { uploadExpenseAttachment } from "../expense-api";
 import {
   EXPENSE_CATEGORIES,
   formatExpenseCategory,
@@ -56,6 +58,8 @@ export function ExpenseForm({
   onSubmit,
 }: ExpenseFormProps) {
   const isBranchManager = actor.role === "BRANCH_MANAGER";
+  const [attachmentIds, setAttachmentIds] = useState<string[]>([]);
+  const [attachmentsUploading, setAttachmentsUploading] = useState(false);
   const form = useForm<ExpenseFormValues>({
     resolver: zodResolver(ExpenseFormSchema),
     defaultValues: getDefaultValues(expense),
@@ -80,6 +84,7 @@ export function ExpenseForm({
       ...(!isBranchManager && {
         branchId: values.branchId ? Number(values.branchId) : null,
       }),
+      ...(attachmentIds.length > 0 && { attachmentIds }),
     });
   };
 
@@ -158,6 +163,14 @@ export function ExpenseForm({
         </SelectField>
       )}
 
+      <AttachmentPicker
+        maxFiles={Math.max(0, 5 - (expense?.attachmentCount ?? 0))}
+        disabled={isLoading}
+        upload={uploadExpenseAttachment}
+        onChange={setAttachmentIds}
+        onUploadingChange={setAttachmentsUploading}
+      />
+
       <div className="mt-2 flex justify-end gap-3 border-t border-line pt-5">
         <Button variant="ghost" onClick={onCancel} disabled={isLoading}>
           Cancel
@@ -165,7 +178,7 @@ export function ExpenseForm({
         <Button
           type="submit"
           isLoading={isLoading}
-          disabled={branchesLoading && !isBranchManager}
+          disabled={(branchesLoading && !isBranchManager) || attachmentsUploading}
           loadingLabel={expense ? "Saving..." : "Creating..."}
         >
           {expense ? "Save changes" : "Create expense"}

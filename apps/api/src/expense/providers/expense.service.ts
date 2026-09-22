@@ -20,6 +20,11 @@ import { UpdateExpenseDto } from '../dtos/update-expense.dto.js';
 import { VoidExpenseDto } from '../dtos/void-expense.dto.js';
 import { ExpenseQueryDto } from '../dtos/expense-query.dto.js';
 import { toExpenseDate } from '../dtos/expense-validation.js';
+import {
+  attachmentSelect,
+  ExpenseAttachmentService,
+  toAttachmentResponse,
+} from './expense-attachment.service.js';
 
 const expenseSelect = {
   id: true,
@@ -48,17 +53,27 @@ const expenseSelect = {
   createdBy: { select: { id: true, name: true } },
   updatedBy: { select: { id: true, name: true } },
   voidedBy: { select: { id: true, name: true } },
+  _count: { select: { attachments: true } },
+  attachments: {
+    select: attachmentSelect,
+    orderBy: { createdAt: 'asc' },
+  },
 } satisfies Prisma.ExpenseSelect;
 
 type ExpenseRecord = Prisma.ExpenseGetPayload<{
   select: typeof expenseSelect;
 }>;
 
-const toExpenseResponse = (expense: ExpenseRecord) => ({
-  ...expense,
-  amount: expense.amount.toFixed(2),
-  expenseDate: expense.expenseDate.toISOString().slice(0, 10),
-});
+const toExpenseResponse = (expense: ExpenseRecord) => {
+  const { _count, attachments, ...values } = expense;
+  return {
+    ...values,
+    amount: expense.amount.toFixed(2),
+    expenseDate: expense.expenseDate.toISOString().slice(0, 10),
+    attachmentCount: _count.attachments,
+    attachments: attachments.map(toAttachmentResponse),
+  };
+};
 
 @Injectable()
 export class ExpenseService {
@@ -67,6 +82,7 @@ export class ExpenseService {
     private readonly pagination: PaginationProvider,
     private readonly permission: PermissionProvider,
     private readonly users: UserService,
+    private readonly expenseAttachments: ExpenseAttachmentService,
   ) {}
 
   async findAll(
@@ -128,6 +144,12 @@ export class ExpenseService {
   async create(dto: CreateExpenseDto, activeUser: ActiveUserDto) {
     const actor = await this.requireExpenseManager(activeUser.sub);
     const branchId = await this.resolveCreateBranch(actor, dto.branchId);
+    const attachmentIds = dto.attachmentIds ?? [];
+    const files = await this.expenseAttachments.prepareFiles(
+      attachmentIds,
+      actor.id,
+    );
+    await this.expenseAttachments.retainFiles(files);
     const expense = await this.prisma.expense.create({
       data: {
         title: dto.title,
@@ -138,6 +160,14 @@ export class ExpenseService {
         branchId,
         createdById: actor.id,
         updatedById: actor.id,
+        ...(files.length > 0 && {
+          attachments: {
+            create: files.map((file) => ({
+              fileId: file.id,
+              attachedById: actor.id,
+            })),
+          },
+        }),
       },
       select: expenseSelect,
     });

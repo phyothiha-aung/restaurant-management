@@ -14,6 +14,7 @@ import {
   getExpenses,
   updateExpense,
   voidExpense,
+  attachExpenseFiles,
   type CreateExpenseInput,
   type ExpenseListQuery,
   type UpdateExpenseInput,
@@ -96,5 +97,34 @@ export const useVoidExpense = (options: ExpenseMutationOptions = {}) => {
     },
     onError: (error) =>
       toast.error(getApiErrorMessage(error, "Could not void expense.")),
+  });
+};
+
+interface AttachExpenseFilesVariables {
+  id: number;
+  attachmentIds: string[];
+}
+
+export const useAttachExpenseFiles = (options: ExpenseMutationOptions = {}) => {
+  const queryClient = useQueryClient();
+  return useMutation<
+    unknown,
+    AxiosError<ApiErrorResponse>,
+    AttachExpenseFilesVariables
+  >({
+    mutationFn: ({ id, attachmentIds }) => attachExpenseFiles(id, attachmentIds),
+    onSuccess: async (_attachments, variables) => {
+      await queryClient.invalidateQueries({ queryKey: expenseKeys.lists() });
+      await queryClient.invalidateQueries({
+        queryKey: expenseKeys.detail(variables.id),
+      });
+      toast.success("Attachments added successfully.");
+      const expense = queryClient.getQueryData<Expense>(
+        expenseKeys.detail(variables.id),
+      );
+      if (expense) options.onSuccess?.(expense);
+    },
+    onError: (error) =>
+      toast.error(getApiErrorMessage(error, "Could not attach files.")),
   });
 };

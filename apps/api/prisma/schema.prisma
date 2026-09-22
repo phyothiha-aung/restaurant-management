@@ -47,6 +47,18 @@ enum ExpenseStatus {
   VOIDED
 }
 
+enum StoredFilePurpose {
+  EXPENSE
+  RECIPE
+  PRODUCT
+}
+
+enum StoredFileStatus {
+  PENDING
+  READY
+  REJECTED
+}
+
 model RefreshToken {
   id        String   @id @default(uuid())
   userId    Int
@@ -79,11 +91,13 @@ model User {
   updatedAt   DateTime  @updatedAt
   verifiedAt  DateTime?
 
-  branch          Branch?        @relation(fields: [branchId], references: [id])
+  branch          Branch?             @relation(fields: [branchId], references: [id])
   refreshTokens   RefreshToken[]
-  createdExpenses Expense[]      @relation("ExpenseCreatedBy")
-  updatedExpenses Expense[]      @relation("ExpenseUpdatedBy")
-  voidedExpenses  Expense[]      @relation("ExpenseVoidedBy")
+  createdExpenses Expense[]           @relation("ExpenseCreatedBy")
+  updatedExpenses Expense[]           @relation("ExpenseUpdatedBy")
+  voidedExpenses  Expense[]           @relation("ExpenseVoidedBy")
+  uploadedFiles   StoredFile[]
+  attachedFiles   ExpenseAttachment[]
 
   @@unique([branchId, username])
   @@index([branchId, role])
@@ -129,13 +143,54 @@ model Expense {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
-  branch    Branch? @relation(fields: [branchId], references: [id], onDelete: Restrict)
-  createdBy User    @relation("ExpenseCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
-  updatedBy User    @relation("ExpenseUpdatedBy", fields: [updatedById], references: [id], onDelete: Restrict)
-  voidedBy  User?   @relation("ExpenseVoidedBy", fields: [voidedById], references: [id], onDelete: Restrict)
+  branch      Branch?             @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  createdBy   User                @relation("ExpenseCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  updatedBy   User                @relation("ExpenseUpdatedBy", fields: [updatedById], references: [id], onDelete: Restrict)
+  voidedBy    User?               @relation("ExpenseVoidedBy", fields: [voidedById], references: [id], onDelete: Restrict)
+  attachments ExpenseAttachment[]
 
   @@index([branchId, expenseDate, status])
   @@index([category, expenseDate])
   @@index([createdById])
   @@map("expenses")
+}
+
+model StoredFile {
+  id String @id @default(uuid())
+
+  uploadedById Int
+  objectKey    String            @unique @db.VarChar(500)
+  purpose      StoredFilePurpose
+  originalName String            @db.VarChar(255)
+  mimeType     String            @db.VarChar(100)
+  sizeBytes    Int
+  status       StoredFileStatus  @default(PENDING)
+  expiresAt    DateTime
+  readyAt      DateTime?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  uploadedBy        User               @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  expenseAttachment ExpenseAttachment?
+
+  @@index([uploadedById, status])
+  @@index([status, expiresAt])
+  @@map("stored_files")
+}
+
+model ExpenseAttachment {
+  id Int @id @default(autoincrement())
+
+  expenseId    Int
+  fileId       String   @unique
+  attachedById Int
+  createdAt    DateTime @default(now())
+
+  expense    Expense    @relation(fields: [expenseId], references: [id], onDelete: Restrict)
+  file       StoredFile @relation(fields: [fileId], references: [id], onDelete: Restrict)
+  attachedBy User       @relation(fields: [attachedById], references: [id], onDelete: Restrict)
+
+  @@index([expenseId])
+  @@index([attachedById])
+  @@map("expense_attachments")
 }

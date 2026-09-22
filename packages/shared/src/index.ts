@@ -23,6 +23,8 @@ export type ExpenseCategory =
   | "OTHER";
 
 export type ExpenseStatus = "ACTIVE" | "VOIDED";
+export type StoredFilePurpose = "EXPENSE" | "RECIPE" | "PRODUCT";
+export type StoredFileStatus = "PENDING" | "READY" | "REJECTED";
 
 export interface ApiSuccessResponse<T> {
   success: true;
@@ -91,6 +93,25 @@ export interface ExpenseUserSummary {
   name: string;
 }
 
+export interface ExpenseAttachment {
+  id: number;
+  fileId: string;
+  originalName: string;
+  mimeType: string;
+  sizeBytes: number;
+  createdAt: string;
+  attachedBy: ExpenseUserSummary;
+}
+
+export interface StoredFileUpload {
+  id: string;
+  originalName: string;
+  mimeType: string;
+  sizeBytes: number;
+  status: StoredFileStatus;
+  expiresAt: string;
+}
+
 export interface Expense {
   id: number;
   branchId: number | null;
@@ -111,4 +132,6 @@ export interface Expense {
   createdBy: ExpenseUserSummary;
   updatedBy: ExpenseUserSummary;
   voidedBy: ExpenseUserSummary | null;
+  attachmentCount: number;
+  attachments: ExpenseAttachment[];
 }
