@@ -18,3 +18,5 @@ export const canManageUsers = (role: UserRole) =>
   managementRoles.includes(role) || role === "BRANCH_MANAGER";
 
 export const canManageBranches = (role: UserRole) => managementRoles.includes(role);
+
+export const canManageExpenses = (role: UserRole) => canManageUsers(role);

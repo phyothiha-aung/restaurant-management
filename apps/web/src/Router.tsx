@@ -5,6 +5,7 @@ import { OverviewPage } from "./pages/OverviewPage";
 import { UsersPage } from "./pages/UsersPage";
 import { BranchesPage } from "./pages/BranchesPage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { ExpensesPage } from "./pages/ExpensesPage";
 import { useAuthStore } from "./store/useAuthStore";
 import { canManageUsers } from "./lib/user-display";
 
@@ -19,6 +20,7 @@ export function AppRoutes() {
           <Route index element={<OverviewPage />} />
           <Route element={<ManagerOnlyRoute />}>
             <Route path="users" element={<UsersPage />} />
+            <Route path="expenses" element={<ExpensesPage />} />
           </Route>
           <Route path="branches" element={<BranchesPage />} />
           <Route path="profile" element={<ProfilePage />} />

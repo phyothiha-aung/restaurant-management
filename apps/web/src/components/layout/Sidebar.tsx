@@ -2,13 +2,18 @@ import {
   Building2,
   LayoutDashboard,
   LogOut,
+  ReceiptText,
   UserRound,
   Users,
   X,
 } from "lucide-react";
 import { NavLink } from "react-router";
 import { logout } from "../../features/auth/auth-services";
-import { canManageUsers, formatRole } from "../../lib/user-display";
+import {
+  canManageExpenses,
+  canManageUsers,
+  formatRole,
+} from "../../lib/user-display";
 import { useAuthStore } from "../../store/useAuthStore";
 import { Button } from "../ui/Button";
 
@@ -41,6 +46,12 @@ export function Sidebar({ onNavigate, onClose }: SidebarProps) {
       label: user.branchId ? "My Branch" : "Branches",
       icon: Building2,
       visible: true,
+    },
+    {
+      to: "/expenses",
+      label: "Expenses",
+      icon: ReceiptText,
+      visible: canManageExpenses(user.role),
     },
     { to: "/profile", label: "My Profile", icon: UserRound, visible: true },
   ];
