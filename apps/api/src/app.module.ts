@@ -9,6 +9,7 @@ import { BranchModule } from './branch/branch.module.js';
 import { APP_GUARD, Reflector } from '@nestjs/core';
 import { AccessTokenGuard } from './auth/guards/access-token.guard.js';
 import { AuthenticationGuard } from './auth/guards/authentication.guard.js';
+import { ExpenseModule } from './expense/expense.module.js';
 
 const ENV = process.env.NODE_ENV;
 
@@ -35,6 +36,7 @@ const ENV = process.env.NODE_ENV;
     AuthModule,
     UserModule,
     BranchModule,
+    ExpenseModule,
     CryptoModule,
   ],
   providers: [

@@ -29,6 +29,24 @@ enum UserStatus {
   INACTIVE
 }
 
+enum ExpenseCategory {
+  INGREDIENTS
+  UTILITIES
+  RENT
+  WAGES
+  MAINTENANCE
+  SUPPLIES
+  TRANSPORT
+  MARKETING
+  TAXES_AND_FEES
+  OTHER
+}
+
+enum ExpenseStatus {
+  ACTIVE
+  VOIDED
+}
+
 model RefreshToken {
   id        String   @id @default(uuid())
   userId    Int
@@ -44,8 +62,8 @@ model RefreshToken {
 }
 
 model User {
-  id           Int  @id @default(autoincrement())
-  branchId     Int?
+  id       Int  @id @default(autoincrement())
+  branchId Int?
 
   name         String
   email        String?    @unique
@@ -61,8 +79,11 @@ model User {
   updatedAt   DateTime  @updatedAt
   verifiedAt  DateTime?
 
-  branch        Branch?        @relation(fields: [branchId], references: [id])
-  refreshTokens RefreshToken[]
+  branch          Branch?        @relation(fields: [branchId], references: [id])
+  refreshTokens   RefreshToken[]
+  createdExpenses Expense[]      @relation("ExpenseCreatedBy")
+  updatedExpenses Expense[]      @relation("ExpenseUpdatedBy")
+  voidedExpenses  Expense[]      @relation("ExpenseVoidedBy")
 
   @@unique([branchId, username])
   @@index([branchId, role])
@@ -70,8 +91,8 @@ model User {
 }
 
 model Branch {
-  id           Int     @id @default(autoincrement())
-  branchCode   String? @unique
+  id         Int     @id @default(autoincrement())
+  branchCode String? @unique
 
   name    String
   address String?
@@ -82,7 +103,39 @@ model Branch {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users      User[]
+  users    User[]
+  expenses Expense[]
 
   @@map("branches")
+}
+
+model Expense {
+  id Int @id @default(autoincrement())
+
+  branchId    Int?
+  createdById Int
+  updatedById Int
+  voidedById  Int?
+
+  title       String          @db.VarChar(100)
+  description String?         @db.VarChar(1000)
+  category    ExpenseCategory
+  amount      Decimal         @db.Decimal(14, 2)
+  expenseDate DateTime        @db.Date
+  status      ExpenseStatus   @default(ACTIVE)
+
+  voidReason String?   @db.VarChar(300)
+  voidedAt   DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  branch    Branch? @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  createdBy User    @relation("ExpenseCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  updatedBy User    @relation("ExpenseUpdatedBy", fields: [updatedById], references: [id], onDelete: Restrict)
+  voidedBy  User?   @relation("ExpenseVoidedBy", fields: [voidedById], references: [id], onDelete: Restrict)
+
+  @@index([branchId, expenseDate, status])
+  @@index([category, expenseDate])
+  @@index([createdById])
+  @@map("expenses")
 }
