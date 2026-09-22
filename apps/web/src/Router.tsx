@@ -6,8 +6,9 @@ import { UsersPage } from "./pages/UsersPage";
 import { BranchesPage } from "./pages/BranchesPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ExpensesPage } from "./pages/ExpensesPage";
+import { ProductCategoriesPage } from "./pages/ProductCategoriesPage";
 import { useAuthStore } from "./store/useAuthStore";
-import { canManageUsers } from "./lib/user-display";
+import { canManageProductCategories, canManageUsers } from "./lib/user-display";
 
 export function AppRoutes() {
   return (
@@ -22,6 +23,9 @@ export function AppRoutes() {
             <Route path="users" element={<UsersPage />} />
             <Route path="expenses" element={<ExpensesPage />} />
           </Route>
+          <Route element={<GlobalManagerOnlyRoute />}>
+            <Route path="product-categories" element={<ProductCategoriesPage />} />
+          </Route>
           <Route path="branches" element={<BranchesPage />} />
           <Route path="profile" element={<ProfilePage />} />
         </Route>
@@ -34,6 +38,13 @@ export function AppRoutes() {
 function ManagerOnlyRoute() {
   const user = useAuthStore((state) => state.user);
   return user && canManageUsers(user.role) ? <Outlet /> : <Navigate to="/" replace />;
+}
+
+function GlobalManagerOnlyRoute() {
+  const user = useAuthStore((state) => state.user);
+  return user && canManageProductCategories(user.role)
+    ? <Outlet />
+    : <Navigate to="/" replace />;
 }
 
 function ProtectedRoute() {

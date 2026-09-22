@@ -112,6 +112,16 @@ export interface StoredFileUpload {
   expiresAt: string;
 }
 
+export interface ProductCategory {
+  id: number;
+  name: string;
+  description: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Expense {
   id: number;
   branchId: number | null;

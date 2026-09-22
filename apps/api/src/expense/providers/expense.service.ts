@@ -150,7 +150,7 @@ export class ExpenseService {
       actor.id,
     );
     await this.expenseAttachments.retainFiles(files);
-    const expense = await this.prisma.expense.create({
+    const created = await this.prisma.expense.create({
       data: {
         title: dto.title,
         description: dto.description ?? null,
@@ -169,8 +169,9 @@ export class ExpenseService {
           },
         }),
       },
-      select: expenseSelect,
+      select: { id: true },
     });
+    const expense = await this.requireScopedExpense(created.id, actor);
     return toExpenseResponse(expense);
   }
 

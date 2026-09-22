@@ -6,12 +6,14 @@ import {
   UserRound,
   Users,
   X,
+  Tags,
 } from "lucide-react";
 import { NavLink } from "react-router";
 import { logout } from "../../features/auth/auth-services";
 import {
   canManageExpenses,
   canManageUsers,
+  canManageProductCategories,
   formatRole,
 } from "../../lib/user-display";
 import { useAuthStore } from "../../store/useAuthStore";
@@ -52,6 +54,12 @@ export function Sidebar({ onNavigate, onClose }: SidebarProps) {
       label: "Expenses",
       icon: ReceiptText,
       visible: canManageExpenses(user.role),
+    },
+    {
+      to: "/product-categories",
+      label: "Product Categories",
+      icon: Tags,
+      visible: canManageProductCategories(user.role),
     },
     { to: "/profile", label: "My Profile", icon: UserRound, visible: true },
   ];

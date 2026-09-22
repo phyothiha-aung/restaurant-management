@@ -20,3 +20,6 @@ export const canManageUsers = (role: UserRole) =>
 export const canManageBranches = (role: UserRole) => managementRoles.includes(role);
 
 export const canManageExpenses = (role: UserRole) => canManageUsers(role);
+
+export const canManageProductCategories = (role: UserRole) =>
+  managementRoles.includes(role);

@@ -13,7 +13,11 @@ const dateFormatter = new Intl.DateTimeFormat(undefined, {
 
 export function BranchDetails({ branch }: BranchDetailsProps) {
   const details = [
-    { icon: Building2, label: "Branch code", value: branch.branchCode ?? "Not set" },
+    {
+      icon: Building2,
+      label: "Branch code",
+      value: branch.branchCode ?? "Not set",
+    },
     { icon: MapPin, label: "Address", value: branch.address ?? "Not set" },
     { icon: Phone, label: "Phone", value: branch.phone ?? "Not set" },
     {
@@ -49,7 +53,9 @@ export function BranchDetails({ branch }: BranchDetailsProps) {
             </div>
             <div className="min-w-0">
               <dt className="text-xs font-semibold text-muted">{label}</dt>
-              <dd className="mt-1 break-words text-sm font-bold text-ink">{value}</dd>
+              <dd className="mt-1 wrap-break-word text-sm font-bold text-ink">
+                {value}
+              </dd>
             </div>
           </div>
         ))}

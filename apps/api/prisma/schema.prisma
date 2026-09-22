@@ -194,3 +194,17 @@ model ExpenseAttachment {
   @@index([attachedById])
   @@map("expense_attachments")
 }
+
+model ProductCategory {
+  id Int @id @default(autoincrement())
+
+  name        String   @db.VarChar(100)
+  description String?  @db.VarChar(300)
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive, sortOrder, name])
+  @@map("product_categories")
+}
