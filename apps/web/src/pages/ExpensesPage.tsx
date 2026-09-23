@@ -50,7 +50,10 @@ function ExpenseSearch({
   return (
     <label className="relative md:col-span-2 xl:col-span-1">
       <span className="sr-only">Search expenses</span>
-      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" size={17} />
+      <Search
+        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"
+        size={17}
+      />
       <input
         className="min-h-11 w-full rounded-xl border border-line bg-white py-2.5 pl-10 pr-3 text-sm text-ink outline-none transition placeholder:text-muted/60 focus:border-brand-red focus:ring-4 focus:ring-brand-red-soft"
         type="search"
@@ -88,9 +91,10 @@ export function ExpensesPage() {
   const branchId = parseBranchId(branchParam);
   const dateFrom = parseDate(searchParams.get("dateFrom"));
   const parsedDateTo = parseDate(searchParams.get("dateTo"));
-  const dateTo = dateFrom && parsedDateTo && dateFrom > parsedDateTo
-    ? undefined
-    : parsedDateTo;
+  const dateTo =
+    dateFrom && parsedDateTo && dateFrom > parsedDateTo
+      ? undefined
+      : parsedDateTo;
   const [drawer, setDrawer] = useState<DrawerState | null>(null);
   const [voidTarget, setVoidTarget] = useState<Expense | null>(null);
   const isBranchManager = actor?.role === "BRANCH_MANAGER";
@@ -106,7 +110,16 @@ export function ExpensesPage() {
       ...(dateFrom && { dateFrom }),
       ...(dateTo && { dateTo }),
     }),
-    [branchId, category, dateFrom, dateTo, isBranchManager, page, search, status],
+    [
+      branchId,
+      category,
+      dateFrom,
+      dateTo,
+      isBranchManager,
+      page,
+      search,
+      status,
+    ],
   );
   const expensesQuery = useExpenses(query);
   const branchesQuery = useBranches({ page: 1, limit: 100 });
@@ -139,7 +152,12 @@ export function ExpensesPage() {
     if (totalPages === 1) next.delete("page");
     else next.set("page", totalPages.toString());
     setSearchParams(next, { replace: true });
-  }, [expensesQuery.data?.meta.totalPages, page, searchParams, setSearchParams]);
+  }, [
+    expensesQuery.data?.meta.totalPages,
+    page,
+    searchParams,
+    setSearchParams,
+  ]);
 
   if (!actor) return null;
 
@@ -153,8 +171,10 @@ export function ExpensesPage() {
     } else {
       next.set(key, value);
     }
-    if (key === "dateFrom" && value && dateTo && value > dateTo) next.delete("dateTo");
-    if (key === "dateTo" && value && dateFrom && value < dateFrom) next.delete("dateFrom");
+    if (key === "dateFrom" && value && dateTo && value > dateTo)
+      next.delete("dateTo");
+    if (key === "dateTo" && value && dateFrom && value < dateFrom)
+      next.delete("dateFrom");
     next.delete("page");
     setSearchParams(next, { replace: true });
   };
@@ -166,12 +186,20 @@ export function ExpensesPage() {
     setSearchParams(next);
   };
 
-  const openDrawer = (mode: ExpenseDrawerMode, expenseId: number | null = null) => {
+  const openDrawer = (
+    mode: ExpenseDrawerMode,
+    expenseId: number | null = null,
+  ) => {
     setDrawer({ mode, expenseId });
   };
 
   const hasFilters = Boolean(
-    search || category || status === "VOIDED" || (!isBranchManager && branchId) || dateFrom || dateTo,
+    search ||
+    category ||
+    status === "VOIDED" ||
+    (!isBranchManager && branchId) ||
+    dateFrom ||
+    dateTo,
   );
   const expenses = expensesQuery.data?.data ?? [];
   const pendingExpenseId = voidMutation.variables?.id ?? null;
@@ -189,8 +217,12 @@ export function ExpensesPage() {
         }
       />
 
-      <Card className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-4">
-        <ExpenseSearch key={search} initialValue={search} onSearch={updateSearch} />
+      <Card className="grid items-end gap-3 p-4 md:grid-cols-2 xl:grid-cols-4">
+        <ExpenseSearch
+          key={search}
+          initialValue={search}
+          onSearch={updateSearch}
+        />
         <FilterSelect
           label="Filter by status"
           value={status}
@@ -206,7 +238,9 @@ export function ExpensesPage() {
         >
           <option value="all">All categories</option>
           {EXPENSE_CATEGORIES.map((item) => (
-            <option value={item} key={item}>{formatExpenseCategory(item)}</option>
+            <option value={item} key={item}>
+              {formatExpenseCategory(item)}
+            </option>
           ))}
         </FilterSelect>
         {!isBranchManager && (
@@ -221,7 +255,8 @@ export function ExpensesPage() {
             </option>
             {branches.map((branch) => (
               <option value={branch.id} key={branch.id}>
-                {branch.name}{branch.isActive ? "" : " (Inactive)"}
+                {branch.name}
+                {branch.isActive ? "" : " (Inactive)"}
               </option>
             ))}
           </FilterSelect>
@@ -245,7 +280,10 @@ export function ExpensesPage() {
           <ExpenseListSkeleton />
         ) : expensesQuery.isError ? (
           <ExpenseError
-            message={getApiErrorMessage(expensesQuery.error, "Could not load expenses.")}
+            message={getApiErrorMessage(
+              expensesQuery.error,
+              "Could not load expenses.",
+            )}
             onRetry={() => void expensesQuery.refetch()}
           />
         ) : expenses.length === 0 ? (
@@ -284,7 +322,9 @@ export function ExpensesPage() {
         branchesLoading={branchesQuery.isPending}
         onClose={closeDrawer}
         onEdit={() =>
-          setDrawer((current) => current ? { ...current, mode: "edit" } : current)
+          setDrawer((current) =>
+            current ? { ...current, mode: "edit" } : current,
+          )
         }
         onRequestVoid={setVoidTarget}
       />
@@ -372,14 +412,22 @@ function ExpenseListSkeleton() {
   );
 }
 
-function ExpenseError({ message, onRetry }: { message: string; onRetry: () => void }) {
+function ExpenseError({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}) {
   return (
     <div className="grid min-h-72 place-items-center p-8 text-center">
       <div className="max-w-md">
         <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-brand-red-soft text-brand-red">
           <RefreshCw size={21} />
         </div>
-        <h2 className="mt-4 text-lg font-extrabold">Expenses could not be loaded</h2>
+        <h2 className="mt-4 text-lg font-extrabold">
+          Expenses could not be loaded
+        </h2>
         <p className="mt-2 text-sm leading-6 text-muted">{message}</p>
         <Button className="mt-5" variant="outline" onClick={onRetry}>
           <RefreshCw size={16} /> Retry
