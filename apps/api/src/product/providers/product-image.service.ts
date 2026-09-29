@@ -179,13 +179,7 @@ export class ProductImageService {
   }
 
   private async requireReader(userId: number) {
-    const actor = await this.users.requireUser(userId);
-    if (!this.permission.isUserManager(actor.role)) {
-      throw new ForbiddenException(
-        'You do not have permission to view product images',
-      );
-    }
-    return actor;
+    return this.users.requireUser(userId);
   }
 
   private normalizeOriginalName(fileName: string) {

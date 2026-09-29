@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -12,17 +13,14 @@ import type { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { PermissionProvider } from '../../user/providers/permission.provider.js';
 import { UserService } from '../../user/providers/user.service.js';
-import { CreateProductDto } from '../dtos/create-product.dto.js';
-import { CreateProductAddonDto } from '../dtos/create-product-addon.dto.js';
-import { CreateProductVariantDto } from '../dtos/create-product-variant.dto.js';
+import type {
+  CreateProductDto,
+  ProductAddonAssignmentSchema,
+  ProductVariantInputSchema,
+} from '../dtos/create-product.dto.js';
 import { ProductQueryDto } from '../dtos/product-query.dto.js';
-import {
-  OptionOverrideDto,
-  ProductOverrideDto,
-} from '../dtos/product-override.dto.js';
-import { UpdateProductAddonDto } from '../dtos/update-product-addon.dto.js';
 import { UpdateProductDto } from '../dtos/update-product.dto.js';
-import { UpdateProductVariantDto } from '../dtos/update-product-variant.dto.js';
+import type { z } from '../../common/lib/zod.js';
 
 const productSelect = {
   id: true,
@@ -35,11 +33,7 @@ const productSelect = {
   createdAt: true,
   updatedAt: true,
   category: {
-    select: {
-      id: true,
-      name: true,
-      isActive: true,
-    },
+    select: { id: true, name: true, isActive: true },
   },
   variants: {
     orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
@@ -51,15 +45,19 @@ const productSelect = {
       isActive: true,
     },
   },
-  addons: {
-    orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+  addonAssignments: {
+    orderBy: [{ sortOrder: 'asc' }, { addon: { name: 'asc' } }],
     select: {
-      id: true,
-      name: true,
-      unitPrice: true,
       maxQuantity: true,
       sortOrder: true,
-      isActive: true,
+      addon: {
+        select: {
+          id: true,
+          name: true,
+          unitPrice: true,
+          isActive: true,
+        },
+      },
     },
   },
   image: {
@@ -79,9 +77,58 @@ const productSelect = {
   },
 } satisfies Prisma.ProductSelect;
 
-type PublicProduct = Prisma.ProductGetPayload<{
-  select: typeof productSelect;
+const menuSelect = {
+  id: true,
+  categoryId: true,
+  code: true,
+  name: true,
+  description: true,
+  sortOrder: true,
+  category: { select: { id: true, name: true } },
+  variants: {
+    where: { isActive: true },
+    orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+    select: {
+      id: true,
+      name: true,
+      price: true,
+      sortOrder: true,
+    },
+  },
+  addonAssignments: {
+    where: { addon: { isActive: true } },
+    orderBy: [{ sortOrder: 'asc' }, { addon: { name: 'asc' } }],
+    select: {
+      maxQuantity: true,
+      sortOrder: true,
+      addon: {
+        select: { id: true, name: true, unitPrice: true },
+      },
+    },
+  },
+  image: {
+    select: {
+      id: true,
+      fileId: true,
+      createdAt: true,
+      file: {
+        select: {
+          originalName: true,
+          mimeType: true,
+          sizeBytes: true,
+          status: true,
+        },
+      },
+    },
+  },
+} satisfies Prisma.ProductSelect;
+
+type ProductRecord = Prisma.ProductGetPayload<{ select: typeof productSelect }>;
+type MenuProductRecord = Prisma.ProductGetPayload<{
+  select: typeof menuSelect;
 }>;
+type VariantInput = z.infer<typeof ProductVariantInputSchema>;
+type AddonAssignmentInput = z.infer<typeof ProductAddonAssignmentSchema>;
 
 @Injectable()
 export class ProductService {
@@ -110,16 +157,18 @@ export class ProductService {
       }),
     };
 
-    return this.pagination.paginateRawQuery<PublicProduct>(
+    return this.pagination.paginateRawQuery(
       query,
-      (skip, take) =>
-        this.prisma.product.findMany({
+      async (skip, take) => {
+        const products = await this.prisma.product.findMany({
           where,
           select: productSelect,
           orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
           skip,
           take,
-        }),
+        });
+        return products.map((product) => this.toPublicProduct(product));
+      },
       () => this.prisma.product.count({ where }),
       request,
     );
@@ -127,24 +176,56 @@ export class ProductService {
 
   async findOne(id: number, activeUser: ActiveUserDto) {
     await this.requireReader(activeUser.sub);
-    return this.requireProduct(id);
+    return this.toPublicProduct(await this.requireProduct(id));
   }
 
   async create(dto: CreateProductDto, activeUser: ActiveUserDto) {
     await this.requireManager(activeUser.sub);
-    await this.requireCategory(dto.categoryId);
+    this.validateVariantPayload(dto.variants);
+    this.validateAddonPayload(dto.addons);
+    if (dto.isActive && !dto.variants.some((variant) => variant.isActive)) {
+      throw new ConflictException(
+        'An active product requires at least one active variant',
+      );
+    }
+    await this.requireCategory(dto.categoryId, dto.isActive);
+    await this.requireActiveAddons(dto.addons);
     await this.assertUniqueName(dto.name, dto.categoryId);
     await this.assertUniqueCode(dto.code);
 
     try {
-      return await this.prisma.product.create({
-        data: {
-          ...dto,
-          code: dto.code || null,
-          description: dto.description || null,
-        },
-        select: productSelect,
+      const product = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.product.create({
+          data: {
+            categoryId: dto.categoryId,
+            code: dto.code || null,
+            name: dto.name,
+            description: dto.description || null,
+            sortOrder: dto.sortOrder,
+            isActive: dto.isActive,
+          },
+          select: { id: true },
+        });
+        await tx.productVariant.createMany({
+          data: dto.variants.map((variant) => ({
+            productId: created.id,
+            ...variant,
+          })),
+        });
+        if (dto.addons.length > 0) {
+          await tx.productAddon.createMany({
+            data: dto.addons.map((assignment) => ({
+              productId: created.id,
+              ...assignment,
+            })),
+          });
+        }
+        return tx.product.findUniqueOrThrow({
+          where: { id: created.id },
+          select: productSelect,
+        });
       });
+      return this.toPublicProduct(product);
     } catch (error) {
       this.handlePrismaError(error);
     }
@@ -152,27 +233,94 @@ export class ProductService {
 
   async update(id: number, dto: UpdateProductDto, activeUser: ActiveUserDto) {
     await this.requireManager(activeUser.sub);
-    const product = await this.requireProduct(id);
-    const categoryId = dto.categoryId ?? product.categoryId;
+    const existing = await this.requireProduct(id);
+    const categoryId = dto.categoryId ?? existing.categoryId;
+    const isActive = dto.isActive ?? existing.isActive;
 
-    if (dto.categoryId !== undefined)
-      await this.requireCategory(dto.categoryId);
-    if (dto.name !== undefined)
-      await this.assertUniqueName(dto.name, categoryId, id);
+    if (dto.variants !== undefined) {
+      this.validateVariantPayload(dto.variants);
+      await this.validateOwnedVariantIds(id, dto.variants);
+    }
+    if (dto.addons !== undefined) {
+      this.validateAddonPayload(dto.addons);
+      await this.requireActiveAddons(dto.addons);
+    }
+
+    const activeVariantCount =
+      dto.variants === undefined
+        ? existing.variants.filter((variant) => variant.isActive).length
+        : dto.variants.filter((variant) => variant.isActive).length;
+    if (isActive && activeVariantCount === 0) {
+      throw new ConflictException(
+        'An active product requires at least one active variant',
+      );
+    }
+
+    await this.requireCategory(categoryId, isActive);
+    if (dto.name !== undefined || dto.categoryId !== undefined) {
+      await this.assertUniqueName(dto.name ?? existing.name, categoryId, id);
+    }
     if (dto.code !== undefined) await this.assertUniqueCode(dto.code, id);
 
+    const { variants, addons, ...productFields } = dto;
     try {
-      return await this.prisma.product.update({
-        where: { id },
-        data: {
-          ...dto,
-          ...(dto.code !== undefined && { code: dto.code || null }),
-          ...(dto.description !== undefined && {
-            description: dto.description || null,
-          }),
-        },
-        select: productSelect,
+      const product = await this.prisma.$transaction(async (tx) => {
+        await tx.product.update({
+          where: { id },
+          data: {
+            ...productFields,
+            ...(dto.code !== undefined && { code: dto.code || null }),
+            ...(dto.description !== undefined && {
+              description: dto.description || null,
+            }),
+          },
+          select: { id: true },
+        });
+
+        if (variants !== undefined) {
+          const retainedIds = variants.flatMap((variant) =>
+            variant.id === undefined ? [] : [variant.id],
+          );
+          await tx.productVariant.updateMany({
+            where: {
+              productId: id,
+              ...(retainedIds.length > 0 && { id: { notIn: retainedIds } }),
+            },
+            data: { isActive: false },
+          });
+          for (const variant of variants) {
+            const { id: variantId, ...data } = variant;
+            if (variantId === undefined) {
+              await tx.productVariant.create({
+                data: { productId: id, ...data },
+              });
+            } else {
+              await tx.productVariant.update({
+                where: { id: variantId },
+                data,
+              });
+            }
+          }
+        }
+
+        if (addons !== undefined) {
+          await tx.productAddon.deleteMany({ where: { productId: id } });
+          if (addons.length > 0) {
+            await tx.productAddon.createMany({
+              data: addons.map((assignment) => ({
+                productId: id,
+                ...assignment,
+              })),
+            });
+          }
+        }
+
+        return tx.product.findUniqueOrThrow({
+          where: { id },
+          select: productSelect,
+        });
       });
+      return this.toPublicProduct(product);
     } catch (error) {
       this.handlePrismaError(error);
     }
@@ -181,309 +329,83 @@ export class ProductService {
   async deactivate(id: number, activeUser: ActiveUserDto) {
     await this.requireManager(activeUser.sub);
     const product = await this.requireProduct(id);
-    if (!product.isActive) return product;
-
-    return this.prisma.product.update({
+    if (!product.isActive) return this.toPublicProduct(product);
+    const updated = await this.prisma.product.update({
       where: { id },
       data: { isActive: false },
       select: productSelect,
     });
+    return this.toPublicProduct(updated);
   }
 
-  async createVariant(
-    productId: number,
-    dto: CreateProductVariantDto,
-    activeUser: ActiveUserDto,
-  ) {
-    await this.requireManager(activeUser.sub);
-    await this.requireProduct(productId);
-    await this.assertUniqueVariantName(productId, dto.name);
-    try {
-      return await this.prisma.productVariant.create({
-        data: { ...dto, productId },
-        select: this.variantSelect,
-      });
-    } catch (error) {
-      this.handlePrismaError(error);
-    }
-  }
-
-  async updateVariant(
-    productId: number,
-    variantId: number,
-    dto: UpdateProductVariantDto,
-    activeUser: ActiveUserDto,
-  ) {
-    await this.requireManager(activeUser.sub);
-    await this.requireVariant(productId, variantId);
-    if (dto.name !== undefined) {
-      await this.assertUniqueVariantName(productId, dto.name, variantId);
-    }
-    try {
-      return await this.prisma.productVariant.update({
-        where: { id: variantId },
-        data: dto,
-        select: this.variantSelect,
-      });
-    } catch (error) {
-      this.handlePrismaError(error);
-    }
-  }
-
-  async deactivateVariant(
-    productId: number,
-    variantId: number,
-    activeUser: ActiveUserDto,
-  ) {
-    await this.requireManager(activeUser.sub);
-    const variant = await this.requireVariant(productId, variantId);
-    if (!variant.isActive) return variant;
-    return this.prisma.productVariant.update({
-      where: { id: variantId },
-      data: { isActive: false },
-      select: this.variantSelect,
-    });
-  }
-
-  async createAddon(
-    productId: number,
-    dto: CreateProductAddonDto,
-    activeUser: ActiveUserDto,
-  ) {
-    await this.requireManager(activeUser.sub);
-    await this.requireProduct(productId);
-    await this.assertUniqueAddonName(productId, dto.name);
-    try {
-      return await this.prisma.productAddon.create({
-        data: { ...dto, productId },
-        select: this.addonSelect,
-      });
-    } catch (error) {
-      this.handlePrismaError(error);
-    }
-  }
-
-  async updateAddon(
-    productId: number,
-    addonId: number,
-    dto: UpdateProductAddonDto,
-    activeUser: ActiveUserDto,
-  ) {
-    await this.requireManager(activeUser.sub);
-    await this.requireAddon(productId, addonId);
-    if (dto.name !== undefined) {
-      await this.assertUniqueAddonName(productId, dto.name, addonId);
-    }
-    try {
-      return await this.prisma.productAddon.update({
-        where: { id: addonId },
-        data: dto,
-        select: this.addonSelect,
-      });
-    } catch (error) {
-      this.handlePrismaError(error);
-    }
-  }
-
-  async deactivateAddon(
-    productId: number,
-    addonId: number,
-    activeUser: ActiveUserDto,
-  ) {
-    await this.requireManager(activeUser.sub);
-    const addon = await this.requireAddon(productId, addonId);
-    if (!addon.isActive) return addon;
-    return this.prisma.productAddon.update({
-      where: { id: addonId },
-      data: { isActive: false },
-      select: this.addonSelect,
-    });
-  }
-
-  async menu(branchId: number, activeUser: ActiveUserDto) {
-    const actor = await this.requireReader(activeUser.sub);
-    await this.requireBranchAccess(actor, branchId);
+  async menu(activeUser: ActiveUserDto) {
+    await this.users.requireUser(activeUser.sub);
     const products = await this.prisma.product.findMany({
-      where: { isActive: true },
-      select: {
-        id: true,
-        categoryId: true,
-        code: true,
-        name: true,
-        description: true,
-        sortOrder: true,
-        category: { select: { id: true, name: true } },
-        branchOverrides: {
-          where: { branchId },
-          select: { isAvailable: true },
-        },
-        variants: {
-          where: { isActive: true },
-          orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-          select: {
-            id: true,
-            name: true,
-            price: true,
-            sortOrder: true,
-            branchOverrides: {
-              where: { branchId },
-              select: { priceOverride: true, isAvailable: true },
-            },
-          },
-        },
-        addons: {
-          where: { isActive: true },
-          orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-          select: {
-            id: true,
-            name: true,
-            unitPrice: true,
-            maxQuantity: true,
-            sortOrder: true,
-            branchOverrides: {
-              where: { branchId },
-              select: { priceOverride: true, isAvailable: true },
-            },
-          },
-        },
+      where: {
+        isActive: true,
+        category: { isActive: true },
+        variants: { some: { isActive: true } },
       },
-      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+      select: menuSelect,
+      orderBy: [
+        { category: { sortOrder: 'asc' } },
+        { sortOrder: 'asc' },
+        { name: 'asc' },
+      ],
     });
-
-    return products
-      .filter((product) => product.branchOverrides[0]?.isAvailable !== false)
-      .map(({ variants, addons, ...product }) => ({
-        ...product,
-        variants: variants
-          .filter(
-            (variant) => variant.branchOverrides[0]?.isAvailable !== false,
-          )
-          .map(({ branchOverrides: overrides, ...variant }) => ({
-            ...variant,
-            price: String(overrides[0]?.priceOverride ?? variant.price),
-          })),
-        addons: addons
-          .filter((addon) => addon.branchOverrides[0]?.isAvailable !== false)
-          .map(({ branchOverrides: overrides, ...addon }) => ({
-            ...addon,
-            unitPrice: String(overrides[0]?.priceOverride ?? addon.unitPrice),
-          })),
-      }));
+    return products.map((product) => this.toMenuProduct(product));
   }
 
-  async upsertProductOverride(
+  private validateVariantPayload(variants: VariantInput[]) {
+    const ids = variants.flatMap((variant) =>
+      variant.id === undefined ? [] : [variant.id],
+    );
+    if (new Set(ids).size !== ids.length) {
+      throw new BadRequestException('Variant IDs must be unique');
+    }
+    const names = variants.map((variant) => variant.name.toLocaleLowerCase());
+    if (new Set(names).size !== names.length) {
+      throw new BadRequestException('Variant names must be unique');
+    }
+  }
+
+  private validateAddonPayload(addons: AddonAssignmentInput[]) {
+    const ids = addons.map((assignment) => assignment.addonId);
+    if (new Set(ids).size !== ids.length) {
+      throw new BadRequestException('Add-on IDs must be unique');
+    }
+  }
+
+  private async validateOwnedVariantIds(
     productId: number,
-    branchId: number,
-    dto: ProductOverrideDto,
-    activeUser: ActiveUserDto,
+    variants: VariantInput[],
   ) {
-    const actor = await this.requireManagerOrBranchManager(activeUser.sub);
-    await this.requireBranchAccess(actor, branchId);
-    await this.requireProduct(productId);
-    return this.prisma.branchProductOverride.upsert({
-      where: { branchId_productId: { branchId, productId } },
-      create: { branchId, productId, isAvailable: dto.isAvailable },
-      update: { isAvailable: dto.isAvailable },
+    const ids = variants.flatMap((variant) =>
+      variant.id === undefined ? [] : [variant.id],
+    );
+    if (ids.length === 0) return;
+    const count = await this.prisma.productVariant.count({
+      where: { productId, id: { in: ids } },
     });
+    if (count !== ids.length) {
+      throw new BadRequestException(
+        'One or more variants do not belong to this product',
+      );
+    }
   }
 
-  async deleteProductOverride(
-    productId: number,
-    branchId: number,
-    activeUser: ActiveUserDto,
-  ) {
-    const actor = await this.requireManagerOrBranchManager(activeUser.sub);
-    await this.requireBranchAccess(actor, branchId);
-    await this.requireProduct(productId);
-    return this.prisma.branchProductOverride.deleteMany({
-      where: { branchId, productId },
+  private async requireActiveAddons(addons: AddonAssignmentInput[]) {
+    if (addons.length === 0) return;
+    const ids = addons.map((assignment) => assignment.addonId);
+    const count = await this.prisma.addon.count({
+      where: { id: { in: ids }, isActive: true },
     });
+    if (count !== ids.length) {
+      throw new BadRequestException(
+        'Every assigned add-on must exist and be active',
+      );
+    }
   }
-
-  async upsertVariantOverride(
-    productId: number,
-    variantId: number,
-    branchId: number,
-    dto: OptionOverrideDto,
-    activeUser: ActiveUserDto,
-  ) {
-    const actor = await this.requireManagerOrBranchManager(activeUser.sub);
-    await this.requireBranchAccess(actor, branchId);
-    await this.requireVariant(productId, variantId);
-    return this.prisma.branchProductVariantOverride.upsert({
-      where: { branchId_variantId: { branchId, variantId } },
-      create: { branchId, variantId, ...dto },
-      update: dto,
-    });
-  }
-
-  async deleteVariantOverride(
-    productId: number,
-    variantId: number,
-    branchId: number,
-    activeUser: ActiveUserDto,
-  ) {
-    const actor = await this.requireManagerOrBranchManager(activeUser.sub);
-    await this.requireBranchAccess(actor, branchId);
-    await this.requireVariant(productId, variantId);
-    return this.prisma.branchProductVariantOverride.deleteMany({
-      where: { branchId, variantId },
-    });
-  }
-
-  async upsertAddonOverride(
-    productId: number,
-    addonId: number,
-    branchId: number,
-    dto: OptionOverrideDto,
-    activeUser: ActiveUserDto,
-  ) {
-    const actor = await this.requireManagerOrBranchManager(activeUser.sub);
-    await this.requireBranchAccess(actor, branchId);
-    await this.requireAddon(productId, addonId);
-    return this.prisma.branchProductAddonOverride.upsert({
-      where: { branchId_addonId: { branchId, addonId } },
-      create: { branchId, addonId, ...dto },
-      update: dto,
-    });
-  }
-
-  async deleteAddonOverride(
-    productId: number,
-    addonId: number,
-    branchId: number,
-    activeUser: ActiveUserDto,
-  ) {
-    const actor = await this.requireManagerOrBranchManager(activeUser.sub);
-    await this.requireBranchAccess(actor, branchId);
-    await this.requireAddon(productId, addonId);
-    return this.prisma.branchProductAddonOverride.deleteMany({
-      where: { branchId, addonId },
-    });
-  }
-
-  private readonly variantSelect = {
-    id: true,
-    productId: true,
-    name: true,
-    price: true,
-    sortOrder: true,
-    isActive: true,
-    createdAt: true,
-    updatedAt: true,
-  } satisfies Prisma.ProductVariantSelect;
-
-  private readonly addonSelect = {
-    id: true,
-    productId: true,
-    name: true,
-    unitPrice: true,
-    maxQuantity: true,
-    sortOrder: true,
-    isActive: true,
-    createdAt: true,
-    updatedAt: true,
-  } satisfies Prisma.ProductAddonSelect;
 
   private async requireReader(userId: number) {
     const actor = await this.users.requireUser(userId);
@@ -505,29 +427,6 @@ export class ProductService {
     return actor;
   }
 
-  private async requireManagerOrBranchManager(userId: number) {
-    const actor = await this.users.requireUser(userId);
-    if (!this.permission.isUserManager(actor.role)) {
-      throw new ForbiddenException(
-        'You do not have permission to manage product overrides',
-      );
-    }
-    return actor;
-  }
-
-  private async requireBranchAccess(
-    actor: Awaited<ReturnType<UserService['requireUser']>>,
-    branchId: number,
-  ) {
-    const branch = await this.prisma.branch.findUnique({
-      where: { id: branchId },
-      select: { id: true, isActive: true },
-    });
-    if (!branch || !branch.isActive)
-      throw new NotFoundException('Branch not found');
-    this.permission.validateOwnership(actor, branchId);
-  }
-
   private async requireProduct(id: number) {
     const product = await this.prisma.product.findUnique({
       where: { id },
@@ -537,30 +436,17 @@ export class ProductService {
     return product;
   }
 
-  private async requireVariant(productId: number, id: number) {
-    const variant = await this.prisma.productVariant.findFirst({
-      where: { id, productId },
-      select: this.variantSelect,
-    });
-    if (!variant) throw new NotFoundException('Product variant not found');
-    return variant;
-  }
-
-  private async requireAddon(productId: number, id: number) {
-    const addon = await this.prisma.productAddon.findFirst({
-      where: { id, productId },
-      select: this.addonSelect,
-    });
-    if (!addon) throw new NotFoundException('Product add-on not found');
-    return addon;
-  }
-
-  private async requireCategory(id: number) {
+  private async requireCategory(id: number, mustBeActive: boolean) {
     const category = await this.prisma.productCategory.findUnique({
       where: { id },
-      select: { id: true },
+      select: { id: true, isActive: true },
     });
     if (!category) throw new NotFoundException('Product category not found');
+    if (mustBeActive && !category.isActive) {
+      throw new ConflictException(
+        'An active product requires an active category',
+      );
+    }
   }
 
   private async assertUniqueName(
@@ -595,49 +481,48 @@ export class ProductService {
       },
       select: { id: true },
     });
-    if (product)
+    if (product) {
       throw new ConflictException('A product with this code already exists');
+    }
   }
 
-  private async assertUniqueVariantName(
-    productId: number,
-    name: string,
-    excludeId?: number,
-  ) {
-    const variant = await this.prisma.productVariant.findFirst({
-      where: {
-        productId,
-        name: { equals: name, mode: 'insensitive' },
-        ...(excludeId !== undefined && { id: { not: excludeId } }),
-      },
-      select: { id: true },
-    });
-    if (variant)
-      throw new ConflictException('A variant with this name already exists');
+  private toPublicProduct(product: ProductRecord) {
+    const { addonAssignments, variants, ...base } = product;
+    return {
+      ...base,
+      variants: variants.map((variant) => ({
+        ...variant,
+        price: variant.price.toString(),
+      })),
+      addons: addonAssignments.map(({ addon, ...assignment }) => ({
+        ...addon,
+        unitPrice: addon.unitPrice.toString(),
+        ...assignment,
+      })),
+    };
   }
 
-  private async assertUniqueAddonName(
-    productId: number,
-    name: string,
-    excludeId?: number,
-  ) {
-    const addon = await this.prisma.productAddon.findFirst({
-      where: {
-        productId,
-        name: { equals: name, mode: 'insensitive' },
-        ...(excludeId !== undefined && { id: { not: excludeId } }),
-      },
-      select: { id: true },
-    });
-    if (addon)
-      throw new ConflictException('An add-on with this name already exists');
+  private toMenuProduct(product: MenuProductRecord) {
+    const { addonAssignments, variants, ...base } = product;
+    return {
+      ...base,
+      variants: variants.map((variant) => ({
+        ...variant,
+        price: variant.price.toString(),
+      })),
+      addons: addonAssignments.map(({ addon, ...assignment }) => ({
+        ...addon,
+        unitPrice: addon.unitPrice.toString(),
+        ...assignment,
+      })),
+    };
   }
 
   private handlePrismaError(error: unknown): never {
     if (error instanceof PrismaClientKnownRequestError) {
       if (error.code === 'P2002') {
         throw new ConflictException(
-          'A product with these values already exists',
+          'A product, variant, or assignment with these values already exists',
         );
       }
       if (error.code === 'P2025') {

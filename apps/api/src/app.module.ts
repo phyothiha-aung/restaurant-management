@@ -12,6 +12,7 @@ import { AuthenticationGuard } from './auth/guards/authentication.guard.js';
 import { ExpenseModule } from './expense/expense.module.js';
 import { StorageModule } from './storage/storage.module.js';
 import { ProductCategoryModule } from './product-category/product-category.module.js';
+import { ProductModule } from './product/product.module.js';
 
 const ENV = process.env.NODE_ENV;
 
@@ -41,6 +42,7 @@ const ENV = process.env.NODE_ENV;
     ExpenseModule,
     StorageModule,
     ProductCategoryModule,
+    ProductModule,
     CryptoModule,
   ],
   providers: [

@@ -5,10 +5,12 @@ import { UserModule } from '../user/user.module.js';
 import { ProductController } from './product.controller.js';
 import { ProductService } from './providers/product.service.js';
 import { ProductImageService } from './providers/product-image.service.js';
+import { AddonController } from './addon.controller.js';
+import { AddonService } from './providers/addon.service.js';
 
 @Module({
   imports: [PaginationModule, StorageModule, UserModule],
-  controllers: [ProductController],
-  providers: [ProductService, ProductImageService],
+  controllers: [ProductController, AddonController],
+  providers: [ProductService, ProductImageService, AddonService],
 })
 export class ProductModule {}

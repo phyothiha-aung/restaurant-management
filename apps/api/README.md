@@ -89,6 +89,15 @@ For future contributors, treat the service-layer access checks as the source of 
 $ npm install
 ```
 
+## Product catalog migration note
+
+The product-catalog migrations are currently treated as unpublished development
+history. The catalog migration was rewritten to remove branch overrides and to
+introduce reusable add-ons. If an older version of the product migration was
+already applied to a disposable local database, recreate that local database
+before applying migrations. Do not reset a shared or production database; use a
+new forward migration if this history has already been deployed there.
+
 ## Private S3 attachments
 
 Expense attachments are uploaded directly from the browser with API-issued
