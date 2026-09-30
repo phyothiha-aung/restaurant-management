@@ -6,14 +6,13 @@ import {
   UserRound,
   Users,
   X,
-  Tags,
+  UtensilsCrossed,
 } from "lucide-react";
 import { NavLink } from "react-router";
 import { logout } from "../../features/auth/auth-services";
 import {
   canManageExpenses,
   canManageUsers,
-  canManageProductCategories,
   formatRole,
 } from "../../lib/user-display";
 import { useAuthStore } from "../../store/useAuthStore";
@@ -56,10 +55,10 @@ export function Sidebar({ onNavigate, onClose }: SidebarProps) {
       visible: canManageExpenses(user.role),
     },
     {
-      to: "/product-categories",
-      label: "Product Categories",
-      icon: Tags,
-      visible: canManageProductCategories(user.role),
+      to: "/catalog",
+      label: "Catalog",
+      icon: UtensilsCrossed,
+      visible: canManageUsers(user.role),
     },
     { to: "/profile", label: "My Profile", icon: UserRound, visible: true },
   ];

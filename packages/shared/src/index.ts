@@ -122,6 +122,61 @@ export interface ProductCategory {
   updatedAt: string;
 }
 
+export interface ProductVariant {
+  id: number;
+  name: string;
+  price: string;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export interface ProductAddon {
+  id: number;
+  name: string;
+  unitPrice: string;
+  isActive: boolean;
+  maxQuantity: number;
+  sortOrder: number;
+}
+
+export interface ProductImage {
+  id: number;
+  fileId: string;
+  createdAt: string;
+  file: {
+    originalName: string;
+    mimeType: string;
+    sizeBytes: number;
+    status: StoredFileStatus;
+  };
+}
+
+export interface Product {
+  id: number;
+  categoryId: number;
+  code: string | null;
+  name: string;
+  description: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  category: Pick<ProductCategory, "id" | "name" | "isActive">;
+  variants: ProductVariant[];
+  addons: ProductAddon[];
+  image: ProductImage | null;
+}
+
+export interface Addon {
+  id: number;
+  name: string;
+  unitPrice: string;
+  isActive: boolean;
+  productCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Expense {
   id: number;
   branchId: number | null;
