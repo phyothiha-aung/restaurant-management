@@ -9,6 +9,7 @@ interface DrawerProps {
   children: ReactNode;
   footer?: ReactNode;
   onClose: () => void;
+  size?: "default" | "wide";
 }
 
 export function Drawer({
@@ -18,6 +19,7 @@ export function Drawer({
   children,
   footer,
   onClose,
+  size = "default",
 }: DrawerProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -50,10 +52,11 @@ export function Drawer({
   return (
     <dialog
       ref={dialogRef}
-      className="m-0 ml-auto h-dvh max-h-none w-full max-w-xl overflow-hidden bg-white p-0 text-ink shadow-2xl backdrop:bg-ink/45"
+      className={`m-0 ml-auto h-dvh max-h-none w-full overflow-hidden bg-white p-0 text-ink shadow-2xl backdrop:bg-ink/45 ${size === "wide" ? "max-w-3xl" : "max-w-xl"}`}
       aria-labelledby={titleId}
       aria-describedby={description ? descriptionId : undefined}
       onCancel={(event) => {
+        if (event.target !== event.currentTarget) return;
         event.preventDefault();
         onClose();
       }}

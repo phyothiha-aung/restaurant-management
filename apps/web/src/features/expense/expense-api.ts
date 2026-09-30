@@ -9,9 +9,9 @@ import type {
   StoredFileUpload,
 } from "@restaurant-management/shared";
 import type { AxiosInstance } from "axios";
-import axios from "axios";
 
 import apiClient from "../../lib/api-client";
+import { uploadToS3 } from "../../lib/s3-upload";
 
 export interface ExpenseListQuery {
   page?: number;
@@ -122,23 +122,6 @@ export const presignExpenseAttachment = async (
     { signal },
   );
   return response.data.data;
-};
-
-export const uploadToS3 = async (
-  upload: PresignedUpload["upload"],
-  file: File,
-  onProgress: (progress: number) => void,
-  signal?: AbortSignal,
-) => {
-  const body = new FormData();
-  Object.entries(upload.fields).forEach(([key, value]) => body.append(key, value));
-  body.append("file", file);
-  await axios.post(upload.url, body, {
-    signal,
-    onUploadProgress: (event) => {
-      if (event.total) onProgress(Math.round((event.loaded / event.total) * 100));
-    },
-  });
 };
 
 export const completeExpenseAttachment = async (

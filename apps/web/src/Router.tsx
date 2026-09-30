@@ -7,6 +7,7 @@ import { BranchesPage } from "./pages/BranchesPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ExpensesPage } from "./pages/ExpensesPage";
 import { ProductCategoriesPage } from "./pages/ProductCategoriesPage";
+import { CatalogPage } from "./pages/CatalogPage";
 import { useAuthStore } from "./store/useAuthStore";
 import { canManageProductCategories, canManageUsers } from "./lib/user-display";
 
@@ -22,6 +23,7 @@ export function AppRoutes() {
           <Route element={<ManagerOnlyRoute />}>
             <Route path="users" element={<UsersPage />} />
             <Route path="expenses" element={<ExpensesPage />} />
+            <Route path="catalog" element={<CatalogPage />} />
           </Route>
           <Route element={<GlobalManagerOnlyRoute />}>
             <Route path="product-categories" element={<ProductCategoriesPage />} />
