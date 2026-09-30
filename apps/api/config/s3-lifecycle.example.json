@@ -1,0 +1,17 @@
+{
+  "Rules": [
+    {
+      "ID": "expire-pending-uploads",
+      "Status": "Enabled",
+      "Filter": {
+        "Tag": {
+          "Key": "retention",
+          "Value": "pending"
+        }
+      },
+      "Expiration": {
+        "Days": 1
+      }
+    }
+  ]
+}

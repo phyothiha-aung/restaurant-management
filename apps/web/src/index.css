@@ -1,0 +1,63 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --color-brand-red: #c8102e;
+  --color-brand-red-dark: #9f0d24;
+  --color-brand-red-soft: #fff0f2;
+  --color-brand-gold: #d8a72e;
+  --color-brand-gold-dark: #9a7112;
+  --color-brand-gold-soft: #fff7dc;
+  --color-brand-gold-pale: #ffe4a0;
+  --color-gold-ink: #382908;
+  --color-surface: #f8f7f4;
+  --color-surface-raised: #ffffff;
+  --color-ink: #292324;
+  --color-muted: #746d6e;
+  --color-line: #e5e0dc;
+  --color-line-soft: #f0ece8;
+  --color-danger: #b42318;
+  --color-danger-dark: #8f1c14;
+  --color-success: #217a4a;
+  --color-success-soft: #e9f7ef;
+  --spacing-sidebar: 15rem;
+  --shadow-card: 0 14px 40px rgba(67, 49, 52, 0.07);
+  --font-heading: "DM Sans", serif;
+}
+
+:root {
+  font-family: "DM Sans", "Helvetica Neue", sans-serif;
+  color: var(--color-ink);
+  background: var(--color-surface);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+html,
+body,
+#root {
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-height: 100svh;
+}
+
+button,
+a,
+input {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a {
+  outline-color: var(--color-brand-gold);
+}
+
+::selection {
+  color: white;
+  background: var(--color-brand-red);
+}
