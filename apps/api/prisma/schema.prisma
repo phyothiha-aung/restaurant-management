@@ -47,6 +47,17 @@ enum ExpenseStatus {
   VOIDED
 }
 
+enum OrderStatus {
+  OPEN
+  COMPLETED
+  CANCELLED
+}
+
+enum DiscountType {
+  FIXED_AMOUNT
+  PERCENT
+}
+
 enum StoredFilePurpose {
   EXPENSE
   RECIPE
@@ -99,6 +110,8 @@ model User {
   uploadedFiles   StoredFile[]
   attachedFiles   ExpenseAttachment[]
   productImages   ProductImage[]
+  createdOrders   Order[]             @relation("OrderCreatedBy")
+  updatedOrders   Order[]             @relation("OrderUpdatedBy")
 
   @@unique([branchId, username])
   @@index([branchId, role])
@@ -120,6 +133,7 @@ model Branch {
 
   users    User[]
   expenses Expense[]
+  orders   Order[]
 
   @@map("branches")
 }
@@ -247,7 +261,8 @@ model ProductVariant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  product    Product     @relation(fields: [productId], references: [id], onDelete: Restrict)
+  orderItems OrderItem[]
 
   @@index([productId, isActive, sortOrder, name])
   @@map("product_variants")
@@ -263,6 +278,7 @@ model Addon {
   updatedAt DateTime @updatedAt
 
   productAssignments ProductAddon[]
+  orderItemAddons    OrderItemAddon[]
 
   @@index([isActive, name])
   @@map("addons")
@@ -298,4 +314,75 @@ model ProductImage {
 
   @@index([attachedById])
   @@map("product_images")
+}
+
+model Order {
+  id Int @id @default(autoincrement())
+
+  branchId    Int
+  createdById Int
+  updatedById Int
+
+  status         OrderStatus   @default(OPEN)
+  subtotal       Decimal       @default(0) @db.Decimal(14, 2)
+  discountType   DiscountType?
+  discountValue  Decimal       @default(0) @db.Decimal(14, 2)
+  discountAmount Decimal       @default(0) @db.Decimal(14, 2)
+  taxPercent     Decimal       @default(0) @db.Decimal(5, 2)
+  taxAmount      Decimal       @default(0) @db.Decimal(14, 2)
+  totalAmount    Decimal       @default(0) @db.Decimal(14, 2)
+
+  completedAt DateTime?
+  cancelledAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  branch    Branch      @relation(fields: [branchId], references: [id], onDelete: Restrict)
+  createdBy User        @relation("OrderCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  updatedBy User        @relation("OrderUpdatedBy", fields: [updatedById], references: [id], onDelete: Restrict)
+  items     OrderItem[]
+
+  @@index([branchId, status, createdAt])
+  @@index([createdById, createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id Int @id @default(autoincrement())
+
+  orderId          Int
+  productVariantId Int
+
+  productName  String  @db.VarChar(100)
+  variantName  String  @db.VarChar(50)
+  unitPrice    Decimal @db.Decimal(14, 2)
+  quantity     Int     @default(1)
+  baseSubtotal Decimal @db.Decimal(14, 2)
+  addonTotal   Decimal @default(0) @db.Decimal(14, 2)
+  lineTotal    Decimal @db.Decimal(14, 2)
+
+  order          Order            @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  productVariant ProductVariant   @relation(fields: [productVariantId], references: [id], onDelete: Restrict)
+  addons         OrderItemAddon[]
+
+  @@index([orderId])
+  @@index([productVariantId])
+  @@map("order_items")
+}
+
+model OrderItemAddon {
+  orderItemId Int
+  addonId     Int
+
+  addonName   String  @db.VarChar(100)
+  unitPrice   Decimal @db.Decimal(14, 2)
+  quantity    Int     @default(1)
+  totalAmount Decimal @db.Decimal(14, 2)
+
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Restrict)
+  addon     Addon     @relation(fields: [addonId], references: [id], onDelete: Restrict)
+
+  @@id([orderItemId, addonId])
+  @@index([addonId])
+  @@map("order_item_addons")
 }
