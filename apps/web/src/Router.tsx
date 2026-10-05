@@ -8,8 +8,15 @@ import { ProfilePage } from "./pages/ProfilePage";
 import { ExpensesPage } from "./pages/ExpensesPage";
 import { ProductCategoriesPage } from "./pages/ProductCategoriesPage";
 import { CatalogPage } from "./pages/CatalogPage";
+import { OrdersPage } from "./pages/OrdersPage";
+import { OrderDetailPage } from "./pages/OrderDetailPage";
+import { OrderEditorPage } from "./pages/OrderEditorPage";
 import { useAuthStore } from "./store/useAuthStore";
-import { canManageProductCategories, canManageUsers } from "./lib/user-display";
+import {
+  canManageProductCategories,
+  canManageUsers,
+  canOperateOrders,
+} from "./lib/user-display";
 
 export function AppRoutes() {
   return (
@@ -30,11 +37,24 @@ export function AppRoutes() {
           </Route>
           <Route path="branches" element={<BranchesPage />} />
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="orders" element={<OrdersPage />} />
+          <Route path="orders/:id" element={<OrderDetailPage />} />
+          <Route element={<OrderOperatorRoute />}>
+            <Route path="orders/new" element={<OrderEditorPage />} />
+            <Route path="orders/:id/edit" element={<OrderEditorPage />} />
+          </Route>
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
+}
+
+function OrderOperatorRoute() {
+  const user = useAuthStore((state) => state.user);
+  return user && canOperateOrders(user.role)
+    ? <Outlet />
+    : <Navigate to="/orders" replace />;
 }
 
 function ManagerOnlyRoute() {

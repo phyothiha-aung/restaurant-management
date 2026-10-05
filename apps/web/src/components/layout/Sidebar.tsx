@@ -7,6 +7,7 @@ import {
   Users,
   X,
   UtensilsCrossed,
+  ShoppingCart,
 } from "lucide-react";
 import { NavLink } from "react-router";
 import { logout } from "../../features/auth/auth-services";
@@ -34,6 +35,12 @@ export function Sidebar({ onNavigate, onClose }: SidebarProps) {
       label: "Overview",
       icon: LayoutDashboard,
       end: true,
+      visible: true,
+    },
+    {
+      to: "/orders",
+      label: "Orders",
+      icon: ShoppingCart,
       visible: true,
     },
     {

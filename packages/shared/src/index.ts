@@ -23,6 +23,8 @@ export type ExpenseCategory =
   | "OTHER";
 
 export type ExpenseStatus = "ACTIVE" | "VOIDED";
+export type OrderStatus = "OPEN" | "COMPLETED" | "CANCELLED";
+export type DiscountType = "FIXED_AMOUNT" | "PERCENT";
 export type StoredFilePurpose = "EXPENSE" | "RECIPE" | "PRODUCT";
 export type StoredFileStatus = "PENDING" | "READY" | "REJECTED";
 
@@ -167,6 +169,34 @@ export interface Product {
   image: ProductImage | null;
 }
 
+export interface MenuProductVariant {
+  id: number;
+  name: string;
+  price: string;
+  sortOrder: number;
+}
+
+export interface MenuProductAddon {
+  id: number;
+  name: string;
+  unitPrice: string;
+  maxQuantity: number;
+  sortOrder: number;
+}
+
+export interface MenuProduct {
+  id: number;
+  categoryId: number;
+  code: string | null;
+  name: string;
+  description: string | null;
+  sortOrder: number;
+  category: Pick<ProductCategory, "id" | "name">;
+  variants: MenuProductVariant[];
+  addons: MenuProductAddon[];
+  image: ProductImage | null;
+}
+
 export interface Addon {
   id: number;
   name: string;
@@ -199,4 +229,59 @@ export interface Expense {
   voidedBy: ExpenseUserSummary | null;
   attachmentCount: number;
   attachments: ExpenseAttachment[];
+}
+
+export interface OrderUserSummary {
+  id: number;
+  name: string;
+}
+
+export interface OrderItemAddon {
+  orderItemId: number;
+  addonId: number;
+  addonName: string;
+  unitPrice: string;
+  quantity: number;
+  totalAmount: string;
+}
+
+export interface OrderItem {
+  id: number;
+  orderId: number;
+  productVariantId: number;
+  productName: string;
+  variantName: string;
+  unitPrice: string;
+  quantity: number;
+  baseSubtotal: string;
+  addonTotal: string;
+  lineTotal: string;
+  addons: OrderItemAddon[];
+}
+
+export interface OrderSummary {
+  id: number;
+  branchId: number;
+  createdById: number;
+  updatedById: number;
+  status: OrderStatus;
+  subtotal: string;
+  discountType: DiscountType | null;
+  discountValue: string;
+  discountAmount: string;
+  taxPercent: string;
+  taxAmount: string;
+  totalAmount: string;
+  completedAt: string | null;
+  cancelledAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  branch: BranchSummary;
+  createdBy: OrderUserSummary;
+  updatedBy: OrderUserSummary;
+  itemCount: number;
+}
+
+export interface Order extends OrderSummary {
+  items: OrderItem[];
 }

@@ -31,10 +31,14 @@ export const branchKeys = {
   detail: (id: number) => [...branchKeys.details(), id] as const,
 };
 
-export const useBranches = (query: BranchListQuery = {}) =>
+export const useBranches = (
+  query: BranchListQuery = {},
+  options: { enabled?: boolean } = {},
+) =>
   useQuery<PaginatedResponse<Branch>, AxiosError<ApiErrorResponse>>({
     queryKey: branchKeys.list(query),
     queryFn: () => getBranches(query),
+    enabled: options.enabled,
   });
 
 export const useBranch = (id: number | null) =>
