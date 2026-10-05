@@ -7,7 +7,6 @@ import { ExpenseDateSchema } from './expense-validation.js';
 export const ExpenseQuerySchema = PaginationQuerySchema.extend({
   category: z.enum(ExpenseCategory).optional(),
   status: z.enum(ExpenseStatus).default(ExpenseStatus.ACTIVE),
-  branchId: z.coerce.number().int().positive().optional(),
   dateFrom: ExpenseDateSchema.optional(),
   dateTo: ExpenseDateSchema.optional(),
 }).refine(

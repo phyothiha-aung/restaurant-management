@@ -31,7 +31,6 @@ const productReaderRoles = [
   UserRole.ADMIN,
   UserRole.OWNER,
   UserRole.MANAGER,
-  UserRole.BRANCH_MANAGER,
 ];
 
 const productManagerRoles = [

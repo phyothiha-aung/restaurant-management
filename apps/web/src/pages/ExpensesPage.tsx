@@ -6,7 +6,6 @@ import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Pagination } from "../components/ui/Pagination";
-import { useBranches } from "../features/branch/branch-services";
 import {
   ExpenseDrawer,
   type ExpenseDrawerMode,
@@ -70,11 +69,6 @@ const parsePage = (value: string | null) => {
   return Number.isInteger(page) && page > 0 ? page : 1;
 };
 
-const parseBranchId = (value: string | null) => {
-  const branchId = Number(value);
-  return Number.isInteger(branchId) && branchId > 0 ? branchId : undefined;
-};
-
 const parseDate = (value: string | null) =>
   value && isValidExpenseDate(value) ? value : undefined;
 
@@ -85,10 +79,8 @@ export function ExpensesPage() {
   const search = searchParams.get("search")?.trim() ?? "";
   const categoryParam = searchParams.get("category");
   const statusParam = searchParams.get("status");
-  const branchParam = searchParams.get("branchId");
   const category = isExpenseCategory(categoryParam) ? categoryParam : undefined;
   const status = isExpenseStatus(statusParam) ? statusParam : "ACTIVE";
-  const branchId = parseBranchId(branchParam);
   const dateFrom = parseDate(searchParams.get("dateFrom"));
   const parsedDateTo = parseDate(searchParams.get("dateTo"));
   const dateTo =
@@ -97,7 +89,6 @@ export function ExpensesPage() {
       : parsedDateTo;
   const [drawer, setDrawer] = useState<DrawerState | null>(null);
   const [voidTarget, setVoidTarget] = useState<Expense | null>(null);
-  const isBranchManager = actor?.role === "BRANCH_MANAGER";
 
   const query = useMemo(
     () => ({
@@ -106,24 +97,19 @@ export function ExpensesPage() {
       status,
       ...(search && { search }),
       ...(category && { category }),
-      ...(!isBranchManager && branchId && { branchId }),
       ...(dateFrom && { dateFrom }),
       ...(dateTo && { dateTo }),
     }),
     [
-      branchId,
       category,
       dateFrom,
       dateTo,
-      isBranchManager,
       page,
       search,
       status,
     ],
   );
   const expensesQuery = useExpenses(query);
-  const branchesQuery = useBranches({ page: 1, limit: 100 });
-  const branches = branchesQuery.data?.data ?? [];
 
   const closeDrawer = () => setDrawer(null);
   const voidMutation = useVoidExpense({
@@ -162,7 +148,7 @@ export function ExpensesPage() {
   if (!actor) return null;
 
   const updateFilter = (
-    key: "category" | "status" | "branchId" | "dateFrom" | "dateTo",
+    key: "category" | "status" | "dateFrom" | "dateTo",
     value: string,
   ) => {
     const next = new URLSearchParams(searchParams);
@@ -197,7 +183,6 @@ export function ExpensesPage() {
     search ||
     category ||
     status === "VOIDED" ||
-    (!isBranchManager && branchId) ||
     dateFrom ||
     dateTo,
   );
@@ -243,24 +228,6 @@ export function ExpensesPage() {
             </option>
           ))}
         </FilterSelect>
-        {!isBranchManager && (
-          <FilterSelect
-            label="Filter by branch"
-            value={branchId?.toString() ?? "all"}
-            disabled={branchesQuery.isPending || branchesQuery.isError}
-            onChange={(value) => updateFilter("branchId", value)}
-          >
-            <option value="all">
-              {branchesQuery.isError ? "Branches unavailable" : "All branches"}
-            </option>
-            {branches.map((branch) => (
-              <option value={branch.id} key={branch.id}>
-                {branch.name}
-                {branch.isActive ? "" : " (Inactive)"}
-              </option>
-            ))}
-          </FilterSelect>
-        )}
         <DateFilter
           label="Expense date from"
           value={dateFrom ?? ""}
@@ -317,9 +284,6 @@ export function ExpensesPage() {
         open={drawer !== null}
         mode={drawer?.mode ?? "view"}
         expenseId={drawer?.expenseId ?? null}
-        actor={actor}
-        branches={branches}
-        branchesLoading={branchesQuery.isPending}
         onClose={closeDrawer}
         onEdit={() =>
           setDrawer((current) =>

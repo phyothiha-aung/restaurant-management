@@ -29,7 +29,6 @@ const expenseManagerRoles = [
   UserRole.ADMIN,
   UserRole.OWNER,
   UserRole.MANAGER,
-  UserRole.BRANCH_MANAGER,
 ];
 
 @Controller('expenses')

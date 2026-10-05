@@ -1,4 +1,4 @@
-import type { Branch, Expense, User } from "@restaurant-management/shared";
+import type { Expense } from "@restaurant-management/shared";
 import { Edit3, XCircle } from "lucide-react";
 import { Button } from "../../../components/ui/Button";
 import { Drawer } from "../../../components/ui/Drawer";
@@ -19,9 +19,6 @@ interface ExpenseDrawerProps {
   open: boolean;
   mode: ExpenseDrawerMode;
   expenseId: number | null;
-  actor: User;
-  branches: Branch[];
-  branchesLoading: boolean;
   onClose: () => void;
   onEdit: () => void;
   onRequestVoid: (expense: Expense) => void;
@@ -31,9 +28,6 @@ export function ExpenseDrawer({
   open,
   mode,
   expenseId,
-  actor,
-  branches,
-  branchesLoading,
   onClose,
   onEdit,
   onRequestVoid,
@@ -54,7 +48,7 @@ export function ExpenseDrawer({
         : "Expense details";
   const description =
     mode === "create"
-      ? "Record a restaurant or branch expense."
+      ? "Record a restaurant expense."
       : mode === "edit"
         ? "Update this expense while preserving its audit history."
         : "Review expense details and audit information.";
@@ -107,9 +101,6 @@ export function ExpenseDrawer({
       {mode === "create" ? (
         <ExpenseForm
           key={open ? "create-open" : "create-closed"}
-          actor={actor}
-          branches={branches}
-          branchesLoading={branchesLoading}
           isLoading={createMutation.isPending}
           onCancel={handleClose}
           onSubmit={handleSubmit}
@@ -129,9 +120,6 @@ export function ExpenseDrawer({
       ) : expense && mode === "edit" ? (
         <ExpenseForm
           key={open ? `edit-${expense.id}-open` : `edit-${expense.id}-closed`}
-          actor={actor}
-          branches={branches}
-          branchesLoading={branchesLoading}
           expense={expense}
           isLoading={updateMutation.isPending || attachMutation.isPending}
           onCancel={handleClose}

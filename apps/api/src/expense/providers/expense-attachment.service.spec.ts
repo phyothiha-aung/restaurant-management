@@ -8,12 +8,12 @@ import {
 } from '../../generated/prisma/enums.js';
 import { ExpenseAttachmentService } from './expense-attachment.service.js';
 
-const actor = { id: 7, branchId: 2, role: UserRole.BRANCH_MANAGER };
+const actor = { id: 7, role: UserRole.MANAGER };
 
 const createService = () => {
   const prisma: any = {
     storedFile: { findMany: vi.fn(), findFirst: vi.fn() },
-    expense: { findFirst: vi.fn() },
+    expense: { findUnique: vi.fn() },
     expenseAttachment: { findFirst: vi.fn(), findMany: vi.fn(), createMany: vi.fn() },
   };
   const storage: any = {
@@ -22,7 +22,6 @@ const createService = () => {
   };
   const permission: any = {
     isUserManager: vi.fn().mockReturnValue(true),
-    isGlobalRole: vi.fn().mockReturnValue(false),
   };
   const users: any = { requireUser: vi.fn().mockResolvedValue(actor) };
   return {
@@ -56,7 +55,7 @@ describe('ExpenseAttachmentService', () => {
     });
   });
 
-  it('returns not found instead of exposing a cross-branch attachment', async () => {
+  it('returns not found for an unknown attachment', async () => {
     const { service, prisma, storage } = createService();
     prisma.expenseAttachment.findFirst.mockResolvedValue(null);
     await expect(
@@ -66,7 +65,6 @@ describe('ExpenseAttachmentService', () => {
       where: {
         id: 20,
         expenseId: 10,
-        expense: { branchId: actor.branchId },
       },
       include: { file: true },
     });
@@ -75,7 +73,7 @@ describe('ExpenseAttachmentService', () => {
 
   it('rejects attaching files to a voided expense', async () => {
     const { service, prisma } = createService();
-    prisma.expense.findFirst.mockResolvedValue({
+    prisma.expense.findUnique.mockResolvedValue({
       status: ExpenseStatus.VOIDED,
       _count: { attachments: 0 },
     });

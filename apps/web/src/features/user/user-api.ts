@@ -14,7 +14,6 @@ export interface UserListQuery {
   search?: string;
   role?: UserRole;
   status?: UserStatus;
-  branchId?: number;
 }
 
 export interface CreateUserInput {
@@ -23,7 +22,6 @@ export interface CreateUserInput {
   password: string;
   role: UserRole;
   status: UserStatus;
-  branchId?: number | null;
 }
 
 export type UpdateUserInput = Partial<CreateUserInput>;

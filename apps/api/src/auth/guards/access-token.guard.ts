@@ -49,10 +49,6 @@ export class AccessTokenGuard implements CanActivate {
         throw new UnauthorizedException('Invalid token or expired');
       }
 
-      if (user.branchId && !user.branch?.isActive) {
-        throw new UnauthorizedException('Invalid token or expired');
-      }
-
       request[REQUEST_USER_KEY] = {
         ...payload,
         role: user.role,

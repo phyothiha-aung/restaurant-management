@@ -9,13 +9,11 @@ import { ExpenseService } from './expense.service.js';
 
 const actor = {
   id: 10,
-  branchId: 1,
-  role: UserRole.BRANCH_MANAGER,
+  role: UserRole.MANAGER,
 };
 
 const expense = {
   id: 5,
-  branchId: 1,
   createdById: actor.id,
   updatedById: actor.id,
   voidedById: null,
@@ -29,7 +27,6 @@ const expense = {
   voidedAt: null,
   createdAt: new Date('2026-09-22T00:00:00.000Z'),
   updatedAt: new Date('2026-09-22T00:00:00.000Z'),
-  branch: { id: 1, branchCode: 'MAIN', name: 'Main', isActive: true },
   createdBy: { id: actor.id, name: 'Manager' },
   updatedBy: { id: actor.id, name: 'Manager' },
   voidedBy: null,
@@ -46,9 +43,6 @@ const createService = (overrides: Record<string, unknown> = {}) => {
       findUnique: vi.fn().mockResolvedValue(expense),
       create: vi.fn().mockResolvedValue(expense),
       updateMany: vi.fn().mockResolvedValue({ count: 1 }),
-    },
-    branch: {
-      findUnique: vi.fn().mockResolvedValue({ isActive: true }),
     },
   };
   prisma.$transaction = vi.fn(async (callback) => callback(prisma));
@@ -68,7 +62,6 @@ const createService = (overrides: Record<string, unknown> = {}) => {
   };
   const permission: any = {
     isUserManager: vi.fn().mockReturnValue(true),
-    isGlobalRole: vi.fn((role) => role !== UserRole.BRANCH_MANAGER),
   };
   const users: any = { requireUser: vi.fn().mockResolvedValue(actor) };
   const expenseAttachments: any = {
@@ -90,7 +83,7 @@ const createService = (overrides: Record<string, unknown> = {}) => {
 };
 
 describe('ExpenseService', () => {
-  it('defaults branch-manager creations to the assigned branch', async () => {
+  it('creates restaurant-wide expenses with audit users', async () => {
     const { service, prisma } = createService();
 
     await service.create(
@@ -107,7 +100,6 @@ describe('ExpenseService', () => {
     expect(prisma.expense.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          branchId: actor.branchId,
           createdById: actor.id,
           updatedById: actor.id,
         }),
@@ -115,7 +107,7 @@ describe('ExpenseService', () => {
     );
   });
 
-  it('applies actor scope and requested filters to list and count', async () => {
+  it('applies requested filters identically to list and count', async () => {
     const { service, prisma } = createService();
 
     await service.findAll(
@@ -125,7 +117,6 @@ describe('ExpenseService', () => {
         search: 'oil',
         category: ExpenseCategory.INGREDIENTS,
         status: ExpenseStatus.ACTIVE,
-        branchId: 2,
       },
       { sub: actor.id } as any,
       { headers: { host: 'localhost' }, protocol: 'http', url: '' } as any,
@@ -135,25 +126,28 @@ describe('ExpenseService', () => {
     const countWhere = prisma.expense.count.mock.calls[0][0].where;
     expect(countWhere).toEqual(listWhere);
     expect(listWhere.AND).toEqual(
-      expect.arrayContaining([{ branchId: 1 }, { branchId: 2 }]),
+      expect.arrayContaining([
+        { status: ExpenseStatus.ACTIVE },
+        { category: ExpenseCategory.INGREDIENTS },
+      ]),
     );
   });
 
-  it('returns not found for records outside the actor scope', async () => {
+  it('returns not found for unknown records', async () => {
     const { service, prisma } = createService();
-    prisma.expense.findFirst.mockResolvedValue(null);
+    prisma.expense.findUnique.mockResolvedValue(null);
 
     await expect(service.findOne(99, { sub: actor.id } as any)).rejects.toBeInstanceOf(
       NotFoundException,
     );
-    expect(prisma.expense.findFirst).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 99, branchId: 1 } }),
+    expect(prisma.expense.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 99 } }),
     );
   });
 
   it('rejects updates to voided expenses', async () => {
     const { service, prisma } = createService();
-    prisma.expense.findFirst.mockResolvedValue({
+    prisma.expense.findUnique.mockResolvedValue({
       ...expense,
       status: ExpenseStatus.VOIDED,
     });
@@ -170,7 +164,7 @@ describe('ExpenseService', () => {
 
   it('returns an existing voided record without overwriting audit data', async () => {
     const { service, prisma } = createService();
-    prisma.expense.findFirst.mockResolvedValue({
+    prisma.expense.findUnique.mockResolvedValue({
       ...expense,
       status: ExpenseStatus.VOIDED,
       voidReason: 'Original reason',

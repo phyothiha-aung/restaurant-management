@@ -9,7 +9,6 @@ export const UpdateUserSchema = z
     password: z.string().min(8).max(72).optional(),
     role: z.enum(UserRole).optional(),
     status: z.enum(UserStatus).optional(),
-    branchId: z.number().int().positive().nullable().optional(),
   })
   .refine((value) => Object.keys(value).length > 0, {
     message: 'At least one field is required',

@@ -22,6 +22,8 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "auth-storage",
+      version: 2,
+      migrate: () => ({ user: null, token: null }),
       storage: createJSONStorage(() =>
         createEncryptedStorage(localStorage, ENCRYPTION_KEY),
       ),

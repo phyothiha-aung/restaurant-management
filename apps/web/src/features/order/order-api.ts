@@ -13,7 +13,6 @@ export interface OrderListQuery {
   page?: number;
   limit?: number;
   status?: OrderStatus;
-  branchId?: number;
   createdById?: number;
   dateFrom?: string;
   dateTo?: string;
@@ -37,7 +36,6 @@ export interface OrderDiscountInput {
 }
 
 export interface CreateOrderInput {
-  branchId?: number;
   items: Omit<OrderItemInput, "id">[];
   discount?: OrderDiscountInput | null;
   taxPercent?: string;

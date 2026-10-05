@@ -26,7 +26,6 @@ const orderOperators = [
   UserRole.ADMIN,
   UserRole.OWNER,
   UserRole.MANAGER,
-  UserRole.BRANCH_MANAGER,
   UserRole.CASHIER,
   UserRole.WAITER,
 ];

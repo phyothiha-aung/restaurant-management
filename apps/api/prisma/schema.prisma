@@ -17,7 +17,6 @@ enum UserRole {
   ADMIN
   OWNER
   MANAGER
-  BRANCH_MANAGER
   WAITER
   CHEF
   CASHIER
@@ -85,8 +84,7 @@ model RefreshToken {
 }
 
 model User {
-  id       Int  @id @default(autoincrement())
-  branchId Int?
+  id Int @id @default(autoincrement())
 
   name         String
   email        String?    @unique
@@ -94,7 +92,7 @@ model User {
   role         UserRole   @default(WAITER)
   status       UserStatus @default(PENDING)
 
-  username String?
+  username String? @unique
   pinHash  String?
 
   lastLoginAt DateTime?
@@ -102,7 +100,6 @@ model User {
   updatedAt   DateTime  @updatedAt
   verifiedAt  DateTime?
 
-  branch          Branch?             @relation(fields: [branchId], references: [id])
   refreshTokens   RefreshToken[]
   createdExpenses Expense[]           @relation("ExpenseCreatedBy")
   updatedExpenses Expense[]           @relation("ExpenseUpdatedBy")
@@ -113,35 +110,13 @@ model User {
   createdOrders   Order[]             @relation("OrderCreatedBy")
   updatedOrders   Order[]             @relation("OrderUpdatedBy")
 
-  @@unique([branchId, username])
-  @@index([branchId, role])
+  @@index([role, status])
   @@map("users")
-}
-
-model Branch {
-  id         Int     @id @default(autoincrement())
-  branchCode String? @unique
-
-  name    String
-  address String?
-  phone   String?
-
-  isActive Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  users    User[]
-  expenses Expense[]
-  orders   Order[]
-
-  @@map("branches")
 }
 
 model Expense {
   id Int @id @default(autoincrement())
 
-  branchId    Int?
   createdById Int
   updatedById Int
   voidedById  Int?
@@ -158,13 +133,12 @@ model Expense {
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 
-  branch      Branch?             @relation(fields: [branchId], references: [id], onDelete: Restrict)
   createdBy   User                @relation("ExpenseCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
   updatedBy   User                @relation("ExpenseUpdatedBy", fields: [updatedById], references: [id], onDelete: Restrict)
   voidedBy    User?               @relation("ExpenseVoidedBy", fields: [voidedById], references: [id], onDelete: Restrict)
   attachments ExpenseAttachment[]
 
-  @@index([branchId, expenseDate, status])
+  @@index([status, expenseDate])
   @@index([category, expenseDate])
   @@index([createdById])
   @@map("expenses")
@@ -319,7 +293,6 @@ model ProductImage {
 model Order {
   id Int @id @default(autoincrement())
 
-  branchId    Int
   createdById Int
   updatedById Int
 
@@ -337,12 +310,11 @@ model Order {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  branch    Branch      @relation(fields: [branchId], references: [id], onDelete: Restrict)
   createdBy User        @relation("OrderCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
   updatedBy User        @relation("OrderUpdatedBy", fields: [updatedById], references: [id], onDelete: Restrict)
   items     OrderItem[]
 
-  @@index([branchId, status, createdAt])
+  @@index([status, createdAt])
   @@index([createdById, createdAt])
   @@map("orders")
 }

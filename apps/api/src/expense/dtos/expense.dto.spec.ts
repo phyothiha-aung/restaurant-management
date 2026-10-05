@@ -10,7 +10,6 @@ const validExpense = {
   category: 'INGREDIENTS' as const,
   amount: '125000.50',
   expenseDate: '2026-09-22',
-  branchId: 1,
 };
 
 describe('expense DTO schemas', () => {

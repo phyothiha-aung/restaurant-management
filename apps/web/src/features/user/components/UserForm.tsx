@@ -1,16 +1,15 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import type {
-  Branch,
   User,
   UserRole,
   UserStatus,
 } from "@restaurant-management/shared";
 import { useEffect, useMemo } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { Button } from "../../../components/ui/Button";
 import { InputField, SelectField } from "../../../components/ui/FormField";
 import { formatRole } from "../../../lib/user-display";
-import { getManageableRoles, isGlobalUserRole } from "../user-options";
+import { getManageableRoles } from "../user-options";
 import { createUserFormSchema, type UserFormValues } from "../user-validation";
 
 export interface UserFormSubmission {
@@ -19,13 +18,10 @@ export interface UserFormSubmission {
   password?: string;
   role: UserRole;
   status: UserStatus;
-  branchId: number | null;
 }
 
 interface UserFormProps {
   actorRole: UserRole;
-  branches: Branch[];
-  branchesLoading: boolean;
   user?: User;
   isLoading: boolean;
   onCancel: () => void;
@@ -34,29 +30,20 @@ interface UserFormProps {
 
 const getDefaultValues = (
   manageableRoles: UserRole[],
-  branches: Branch[],
   user?: User,
 ): UserFormValues => {
   const role = user?.role ?? manageableRoles[0] ?? "WAITER";
-  const firstActiveBranch = branches.find((branch) => branch.isActive);
   return {
     name: user?.name ?? "",
     email: user?.email ?? "",
     password: "",
     role,
     status: user?.status ?? "PENDING",
-    branchId:
-      user?.branchId?.toString() ??
-      (!isGlobalUserRole(role) && firstActiveBranch
-        ? firstActiveBranch.id.toString()
-        : ""),
   };
 };
 
 export function UserForm({
   actorRole,
-  branches,
-  branchesLoading,
   user,
   isLoading,
   onCancel,
@@ -66,44 +53,18 @@ export function UserForm({
     () => getManageableRoles(actorRole),
     [actorRole],
   );
-  const activeBranchIds = useMemo(
-    () =>
-      new Set(
-        branches.filter((branch) => branch.isActive).map((branch) => branch.id),
-      ),
-    [branches],
-  );
   const schema = useMemo(
-    () => createUserFormSchema(Boolean(user), activeBranchIds),
-    [activeBranchIds, user],
+    () => createUserFormSchema(Boolean(user)),
+    [user],
   );
   const form = useForm<UserFormValues>({
     resolver: zodResolver(schema),
-    defaultValues: getDefaultValues(manageableRoles, branches, user),
+    defaultValues: getDefaultValues(manageableRoles, user),
   });
-  const selectedRole = useWatch({ control: form.control, name: "role" });
-  const needsBranch = !isGlobalUserRole(selectedRole);
-  const availableBranches = branches.filter(
-    (branch) => branch.isActive || branch.id === user?.branchId,
-  );
 
   useEffect(() => {
-    form.reset(getDefaultValues(manageableRoles, branches, user));
-  }, [branches, form, manageableRoles, user]);
-
-  useEffect(() => {
-    if (!needsBranch) {
-      form.setValue("branchId", "", { shouldValidate: false });
-      return;
-    }
-
-    const current = Number(form.getValues("branchId"));
-    if (!activeBranchIds.has(current) && activeBranchIds.size === 1) {
-      form.setValue("branchId", [...activeBranchIds][0].toString(), {
-        shouldValidate: true,
-      });
-    }
-  }, [activeBranchIds, form, needsBranch]);
+    form.reset(getDefaultValues(manageableRoles, user));
+  }, [form, manageableRoles, user]);
 
   const statusOptions: UserStatus[] =
     user?.status === "INACTIVE"
@@ -117,7 +78,6 @@ export function UserForm({
       ...(values.password && { password: values.password }),
       role: values.role,
       status: values.status,
-      branchId: isGlobalUserRole(values.role) ? null : Number(values.branchId),
     });
   };
 
@@ -186,32 +146,6 @@ export function UserForm({
           ))}
         </SelectField>
       </div>
-      {needsBranch && (
-        <SelectField
-          label="Branch"
-          disabled={branchesLoading || isLoading}
-          hint={
-            user?.branch && !user.branch.isActive
-              ? "The current branch is inactive. Select an active branch or reactivate it first."
-              : "Branch-scoped roles require an active branch."
-          }
-          error={form.formState.errors.branchId?.message}
-          {...form.register("branchId")}
-        >
-          <option value="">Select a branch</option>
-          {availableBranches.map((branch) => (
-            <option
-              value={branch.id}
-              disabled={!branch.isActive}
-              key={branch.id}
-            >
-              {branch.name}
-              {branch.isActive ? "" : " (Inactive)"}
-            </option>
-          ))}
-        </SelectField>
-      )}
-
       <div className="mt-2 flex justify-end gap-3 border-t border-line pt-5">
         <Button variant="ghost" onClick={onCancel} disabled={isLoading}>
           Cancel
@@ -219,7 +153,7 @@ export function UserForm({
         <Button
           type="submit"
           isLoading={isLoading}
-          disabled={branchesLoading || manageableRoles.length === 0}
+          disabled={manageableRoles.length === 0}
           loadingLabel={user ? "Saving..." : "Creating..."}
         >
           {user ? "Save changes" : "Create user"}

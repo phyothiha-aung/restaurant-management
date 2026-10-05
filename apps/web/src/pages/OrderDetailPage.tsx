@@ -1,6 +1,5 @@
 import {
   ArrowLeft,
-  Building2,
   CalendarClock,
   CheckCircle2,
   Pencil,
@@ -163,7 +162,6 @@ export function OrderDetailPage() {
           <Card className="p-5">
             <h2 className="font-extrabold">Order information</h2>
             <dl className="mt-4 space-y-4 text-sm">
-              <InfoRow icon={<Building2 size={16} />} label="Branch" value={order.branch.name} />
               <InfoRow icon={<UserRound size={16} />} label="Created by" value={order.createdBy.name} />
               <InfoRow icon={<UserRound size={16} />} label="Last updated by" value={order.updatedBy.name} />
               <InfoRow icon={<CalendarClock size={16} />} label="Created" value={dateTime.format(new Date(order.createdAt))} />

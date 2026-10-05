@@ -14,9 +14,8 @@ import {
   OrderStatus,
   UserRole,
 } from '../../generated/prisma/enums.js';
-import { Prisma, type User } from '../../generated/prisma/client.js';
+import { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
-import { PermissionProvider } from '../../user/providers/permission.provider.js';
 import { UserService } from '../../user/providers/user.service.js';
 import {
   CreateOrderDto,
@@ -39,19 +38,13 @@ const orderOperators = new Set<UserRole>([
   UserRole.ADMIN,
   UserRole.OWNER,
   UserRole.MANAGER,
-  UserRole.BRANCH_MANAGER,
   UserRole.CASHIER,
   UserRole.WAITER,
 ]);
 
 const userSummary = { select: { id: true, name: true } } as const;
-const branchSummary = {
-  select: { id: true, branchCode: true, name: true, isActive: true },
-} as const;
-
 const orderSummarySelect = {
   id: true,
-  branchId: true,
   createdById: true,
   updatedById: true,
   status: true,
@@ -66,7 +59,6 @@ const orderSummarySelect = {
   cancelledAt: true,
   createdAt: true,
   updatedAt: true,
-  branch: branchSummary,
   createdBy: userSummary,
   updatedBy: userSummary,
   _count: { select: { items: true } },
@@ -147,7 +139,6 @@ export class OrderService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly pagination: PaginationProvider,
-    private readonly permission: PermissionProvider,
     private readonly users: UserService,
   ) {}
 
@@ -156,13 +147,9 @@ export class OrderService {
     activeUser: ActiveUserDto,
     request: Request,
   ) {
-    const actor = await this.users.requireUser(activeUser.sub);
+    await this.users.requireUser(activeUser.sub);
     const filters: Prisma.OrderWhereInput[] = [];
-    if (!this.permission.isGlobalRole(actor.role)) {
-      filters.push({ branchId: actor.branchId ?? -1 });
-    }
     if (query.status) filters.push({ status: query.status });
-    if (query.branchId) filters.push({ branchId: query.branchId });
     if (query.createdById) filters.push({ createdById: query.createdById });
     if (query.dateFrom || query.dateTo) {
       filters.push({
@@ -190,13 +177,12 @@ export class OrderService {
   }
 
   async findOne(id: number, activeUser: ActiveUserDto) {
-    const actor = await this.users.requireUser(activeUser.sub);
-    return toOrderDetail(await this.requireScopedOrder(id, actor));
+    await this.users.requireUser(activeUser.sub);
+    return toOrderDetail(await this.requireOrder(id));
   }
 
   async create(dto: CreateOrderDto, activeUser: ActiveUserDto) {
     const actor = await this.requireOperator(activeUser.sub);
-    const branchId = await this.resolveCreateBranch(actor, dto.branchId);
     return this.runSerializable(async (tx) => {
       const items = [];
       for (const item of dto.items) {
@@ -209,7 +195,6 @@ export class OrderService {
       );
       const created = await tx.order.create({
         data: {
-          branchId,
           createdById: actor.id,
           updatedById: actor.id,
           ...totals,
@@ -223,7 +208,7 @@ export class OrderService {
 
   async update(id: number, dto: UpdateOrderDto, activeUser: ActiveUserDto) {
     const actor = await this.requireOperator(activeUser.sub);
-    await this.requireScopedOrder(id, actor);
+    await this.requireOrder(id);
     return this.runSerializable(async (tx) => {
       const current = await tx.order.findUnique({
         where: { id },
@@ -281,7 +266,7 @@ export class OrderService {
     activeUser: ActiveUserDto,
   ) {
     const actor = await this.requireOperator(activeUser.sub);
-    const scoped = await this.requireScopedOrder(id, actor);
+    const scoped = await this.requireOrder(id);
     if (scoped.status === target) return toOrderDetail(scoped);
     if (scoped.status !== OrderStatus.OPEN) {
       throw new ConflictException(
@@ -586,43 +571,13 @@ export class OrderService {
     return actor;
   }
 
-  private async requireScopedOrder(id: number, actor: User) {
-    const order = await this.prisma.order.findFirst({
-      where: {
-        id,
-        ...(!this.permission.isGlobalRole(actor.role) && {
-          branchId: actor.branchId ?? -1,
-        }),
-      },
+  private async requireOrder(id: number) {
+    const order = await this.prisma.order.findUnique({
+      where: { id },
       select: orderDetailSelect,
     });
     if (!order) throw new NotFoundException('Order not found');
     return order;
-  }
-
-  private async resolveCreateBranch(actor: User, requested?: number) {
-    let branchId: number;
-    if (this.permission.isGlobalRole(actor.role)) {
-      if (!requested) throw new BadRequestException('branchId is required');
-      branchId = requested;
-    } else {
-      if (
-        !actor.branchId ||
-        (requested !== undefined && requested !== actor.branchId)
-      ) {
-        throw new ForbiddenException(
-          'You do not have permission to manage this branch',
-        );
-      }
-      branchId = actor.branchId;
-    }
-    const branch = await this.prisma.branch.findUnique({
-      where: { id: branchId },
-      select: { isActive: true },
-    });
-    if (!branch) throw new NotFoundException('Branch not found');
-    if (!branch.isActive) throw new ForbiddenException('Branch is inactive');
-    return branchId;
   }
 
   private async runSerializable<T>(

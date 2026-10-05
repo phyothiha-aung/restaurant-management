@@ -32,10 +32,8 @@ const createService = (role = UserRole.MANAGER) => {
     })),
   };
   const permission: any = {
-    isUserManager: vi.fn().mockReturnValue(
-      role === UserRole.MANAGER || role === UserRole.BRANCH_MANAGER,
-    ),
-    isBranchManager: vi.fn().mockReturnValue(role === UserRole.MANAGER),
+    isUserManager: vi.fn().mockReturnValue(role === UserRole.MANAGER),
+    isManager: vi.fn().mockReturnValue(role === UserRole.MANAGER),
   };
   const users: any = {
     requireUser: vi.fn().mockResolvedValue({ id: 1, role }),
@@ -70,9 +68,11 @@ describe('ProductCategoryService', () => {
     );
   });
 
-  it('allows branch managers to read but not mutate categories', async () => {
-    const { service } = createService(UserRole.BRANCH_MANAGER);
-    await expect(service.findOne(1, { sub: 1 } as any)).resolves.toEqual(category);
+  it('denies category management access to operational users', async () => {
+    const { service } = createService(UserRole.CASHIER);
+    await expect(
+      service.findOne(1, { sub: 1 } as any),
+    ).rejects.toBeInstanceOf(ForbiddenException);
     await expect(
       service.create({ name: 'Rice', sortOrder: 0, isActive: true }, { sub: 1 } as any),
     ).rejects.toBeInstanceOf(ForbiddenException);

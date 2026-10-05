@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { Branch, Expense, User } from "@restaurant-management/shared";
+import type { Expense } from "@restaurant-management/shared";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button } from "../../../components/ui/Button";
@@ -22,9 +22,6 @@ import {
 } from "../expense-validation";
 
 interface ExpenseFormProps {
-  actor: User;
-  branches: Branch[];
-  branchesLoading: boolean;
   expense?: Expense;
   isLoading: boolean;
   onCancel: () => void;
@@ -45,19 +42,14 @@ const getDefaultValues = (expense?: Expense): ExpenseFormValues => ({
   category: expense?.category ?? "",
   amount: expense?.amount ?? "",
   expenseDate: expense?.expenseDate ?? today(),
-  branchId: expense?.branchId?.toString() ?? "",
 });
 
 export function ExpenseForm({
-  actor,
-  branches,
-  branchesLoading,
   expense,
   isLoading,
   onCancel,
   onSubmit,
 }: ExpenseFormProps) {
-  const isBranchManager = actor.role === "BRANCH_MANAGER";
   const [attachmentIds, setAttachmentIds] = useState<string[]>([]);
   const [attachmentsUploading, setAttachmentsUploading] = useState(false);
   const form = useForm<ExpenseFormValues>({
@@ -69,10 +61,6 @@ export function ExpenseForm({
     form.reset(getDefaultValues(expense));
   }, [expense, form]);
 
-  const availableBranches = branches.filter(
-    (branch) => branch.isActive || branch.id === expense?.branchId,
-  );
-
   const submit = (values: ExpenseFormValues) => {
     if (!isExpenseCategory(values.category)) return;
     onSubmit({
@@ -81,9 +69,6 @@ export function ExpenseForm({
       category: values.category,
       amount: values.amount.trim(),
       expenseDate: values.expenseDate,
-      ...(!isBranchManager && {
-        branchId: values.branchId ? Number(values.branchId) : null,
-      }),
       ...(attachmentIds.length > 0 && { attachmentIds }),
     });
   };
@@ -132,37 +117,6 @@ export function ExpenseForm({
         {...form.register("expenseDate")}
       />
 
-      {isBranchManager ? (
-        <div className="rounded-xl border border-line bg-surface p-4">
-          <p className="text-xs font-bold text-ink">Branch</p>
-          <p className="mt-1.5 text-sm font-semibold text-muted">
-            {actor.branch?.name ?? "Assigned branch"}
-          </p>
-          <p className="mt-1 text-xs text-muted">
-            This expense will be recorded for your assigned branch.
-          </p>
-        </div>
-      ) : (
-        <SelectField
-          label="Branch"
-          hint="Choose Restaurant-wide for overhead not tied to one branch."
-          disabled={branchesLoading || isLoading}
-          error={form.formState.errors.branchId?.message}
-          {...form.register("branchId")}
-        >
-          <option value="">Restaurant-wide</option>
-          {availableBranches.map((branch) => (
-            <option
-              value={branch.id}
-              disabled={!branch.isActive}
-              key={branch.id}
-            >
-              {branch.name}{branch.isActive ? "" : " (Inactive)"}
-            </option>
-          ))}
-        </SelectField>
-      )}
-
       <AttachmentPicker
         maxFiles={Math.max(0, 5 - (expense?.attachmentCount ?? 0))}
         disabled={isLoading}
@@ -178,7 +132,7 @@ export function ExpenseForm({
         <Button
           type="submit"
           isLoading={isLoading}
-          disabled={(branchesLoading && !isBranchManager) || attachmentsUploading}
+          disabled={attachmentsUploading}
           loadingLabel={expense ? "Saving..." : "Creating..."}
         >
           {expense ? "Save changes" : "Create expense"}

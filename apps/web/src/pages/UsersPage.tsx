@@ -7,7 +7,6 @@ import { Card } from "../components/ui/Card";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Pagination } from "../components/ui/Pagination";
-import { useBranches } from "../features/branch/branch-services";
 import {
   UserDrawer,
   type UserDrawerMode,
@@ -70,11 +69,6 @@ const parsePage = (value: string | null) => {
   return Number.isInteger(page) && page > 0 ? page : 1;
 };
 
-const parseBranchId = (value: string | null) => {
-  const branchId = Number(value);
-  return Number.isInteger(branchId) && branchId > 0 ? branchId : undefined;
-};
-
 export function UsersPage() {
   const actor = useAuthStore((state) => state.user);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -82,10 +76,8 @@ export function UsersPage() {
   const search = searchParams.get("search")?.trim() ?? "";
   const roleParam = searchParams.get("role");
   const statusParam = searchParams.get("status");
-  const branchParam = searchParams.get("branchId");
   const role = isUserRole(roleParam) ? roleParam : undefined;
   const status = isUserStatus(statusParam) ? statusParam : undefined;
-  const branchId = parseBranchId(branchParam);
   const [drawer, setDrawer] = useState<DrawerState | null>(null);
   const [deactivateTarget, setDeactivateTarget] = useState<User | null>(null);
 
@@ -100,13 +92,10 @@ export function UsersPage() {
       ...(search && { search }),
       ...(role && { role }),
       ...(status && { status }),
-      ...(branchId && { branchId }),
     }),
-    [branchId, page, role, search, status],
+    [page, role, search, status],
   );
   const usersQuery = useUsers(query);
-  const branchesQuery = useBranches({ page: 1, limit: 100 });
-  const branches = branchesQuery.data?.data ?? [];
 
   const closeDrawer = () => setDrawer(null);
   const deactivateMutation = useDeactivateUser({
@@ -140,7 +129,7 @@ export function UsersPage() {
 
   if (!actor) return null;
 
-  const updateFilter = (key: "role" | "status" | "branchId", value: string) => {
+  const updateFilter = (key: "role" | "status", value: string) => {
     const next = new URLSearchParams(searchParams);
     if (value === "all") next.delete(key);
     else next.set(key, value);
@@ -159,7 +148,7 @@ export function UsersPage() {
     setDrawer({ mode, userId });
   };
 
-  const hasFilters = Boolean(search || role || status || branchId);
+  const hasFilters = Boolean(search || role || status);
   const users = usersQuery.data?.data ?? [];
   const pendingUserId =
     deactivateMutation.variables ?? reactivateMutation.variables?.id ?? null;
@@ -169,7 +158,7 @@ export function UsersPage() {
       <PageHeader
         eyebrow="People"
         title="Users"
-        description="Manage staff accounts, roles, branch assignments, and account status."
+        description="Manage staff accounts, restaurant roles, and account status."
         action={
           <Button onClick={() => openDrawer("create")}>
             <UserPlus size={17} /> Add user
@@ -177,7 +166,7 @@ export function UsersPage() {
         }
       />
 
-      <Card className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-4">
+      <Card className="grid gap-3 p-4 md:grid-cols-3">
         <UserSearch key={search} initialValue={search} onSearch={updateSearch} />
         <FilterSelect
           label="Filter by role"
@@ -198,21 +187,6 @@ export function UsersPage() {
           <option value="ACTIVE">Active</option>
           <option value="PENDING">Pending</option>
           <option value="INACTIVE">Inactive</option>
-        </FilterSelect>
-        <FilterSelect
-          label="Filter by branch"
-          value={branchId?.toString() ?? "all"}
-          disabled={branchesQuery.isPending || branchesQuery.isError}
-          onChange={(value) => updateFilter("branchId", value)}
-        >
-          <option value="all">
-            {branchesQuery.isError ? "Branches unavailable" : "All branches"}
-          </option>
-          {branches.map((branch) => (
-            <option value={branch.id} key={branch.id}>
-              {branch.name}{branch.isActive ? "" : " (Inactive)"}
-            </option>
-          ))}
         </FilterSelect>
       </Card>
 
@@ -259,8 +233,6 @@ export function UsersPage() {
         mode={drawer?.mode ?? "view"}
         userId={drawer?.userId ?? null}
         actorRole={actor.role}
-        branches={branches}
-        branchesLoading={branchesQuery.isPending}
         onClose={closeDrawer}
         onEdit={() =>
           setDrawer((current) => current ? { ...current, mode: "edit" } : current)

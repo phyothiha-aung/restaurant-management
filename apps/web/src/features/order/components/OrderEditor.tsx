@@ -1,12 +1,10 @@
-import type { Branch, DiscountType, MenuProduct, Order } from "@restaurant-management/shared";
-import { AlertCircle, ArrowLeft, Building2, Minus, Plus, Search, ShoppingBag, Trash2 } from "lucide-react";
+import type { DiscountType, MenuProduct, Order } from "@restaurant-management/shared";
+import { AlertCircle, ArrowLeft, Minus, Plus, Search, ShoppingBag, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useBlocker, useNavigate } from "react-router";
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
 import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
-import { useBranches } from "../../branch/branch-services";
-import { managementRoles } from "../../../lib/user-display";
 import { useAuthStore } from "../../../store/useAuthStore";
 import { useCreateOrder, useOrderMenu, useUpdateOrder } from "../order-services";
 import {
@@ -30,12 +28,8 @@ interface OrderEditorProps {
 export function OrderEditor({ order }: OrderEditorProps) {
   const actor = useAuthStore((state) => state.user);
   const navigate = useNavigate();
-  const isEditing = Boolean(order);
-  const isGlobal = actor ? managementRoles.includes(actor.role) : false;
   const menuQuery = useOrderMenu();
-  const branchesQuery = useBranches({ page: 1, limit: 100, isActive: true }, { enabled: isGlobal && !isEditing });
   const [cart, setCart] = useState<CartItem[]>(() => order ? cartFromOrder(order) : []);
-  const [branchId, setBranchId] = useState(order?.branchId.toString() ?? "");
   const [discountType, setDiscountType] = useState<DiscountType | null>(order?.discountType ?? null);
   const [discountValue, setDiscountValue] = useState(order?.discountValue ?? "0");
   const [taxPercent, setTaxPercent] = useState(order?.taxPercent ?? "0");
@@ -45,16 +39,14 @@ export function OrderEditor({ order }: OrderEditorProps) {
   const [initialSnapshot] = useState(() =>
     snapshot(
       order ? cartFromOrder(order) : [],
-      order?.branchId.toString() ?? "",
       order?.discountType ?? null,
       order?.discountValue ?? "0",
       order?.taxPercent ?? "0",
     ),
   );
   const allowNavigation = useRef(false);
-  const branchSelectRef = useRef<HTMLSelectElement>(null);
 
-  const currentSnapshot = snapshot(cart, branchId, discountType, discountValue, taxPercent);
+  const currentSnapshot = snapshot(cart, discountType, discountValue, taxPercent);
   const isDirty = initialSnapshot !== currentSnapshot;
   const blocker = useBlocker(() => isDirty && !allowNavigation.current);
 
@@ -114,11 +106,6 @@ export function OrderEditor({ order }: OrderEditorProps) {
   const save = async () => {
     setError(null);
     if (cart.length === 0) return setError("Add at least one item before saving the order.");
-    if (isGlobal && !isEditing && !branchId) {
-      setError("Choose the branch receiving this order.");
-      window.requestAnimationFrame(() => branchSelectRef.current?.focus());
-      return;
-    }
     if (!isValidPercent(taxPercent)) return setError("Tax must be between 0 and 100 with at most two decimal places.");
     if (discountType && !isValidDecimal(discountValue)) return setError("Enter a valid discount with at most two decimal places.");
     if (discountType === "PERCENT" && !isValidPercent(discountValue)) return setError("Percentage discount must be between 0 and 100.");
@@ -135,7 +122,6 @@ export function OrderEditor({ order }: OrderEditorProps) {
       const saved = order
         ? await updateMutation.mutateAsync({ id: order.id, input: { items, discount, taxPercent } })
         : await createMutation.mutateAsync({
-            ...(isGlobal && { branchId: Number(branchId) }),
             items: items.map(({ id: _id, ...item }) => item),
             discount,
             taxPercent,
@@ -163,31 +149,6 @@ export function OrderEditor({ order }: OrderEditorProps) {
         <div className="xl:sticky xl:top-6">
           <Card className="overflow-hidden">
             <div className="flex items-center justify-between border-b border-line px-4 py-4"><div className="flex items-center gap-2"><ShoppingBag className="text-brand-red" size={19} /><h2 className="font-extrabold">Current order</h2></div><span className="text-xs font-bold text-muted">{cart.length} line{cart.length === 1 ? "" : "s"}</span></div>
-            <div className="border-b border-line bg-brand-gold-soft/50 p-4">
-              {isGlobal ? (
-                <label className="grid gap-1.5">
-                  <span className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-muted"><Building2 size={14} /> Order branch</span>
-                  <select
-                    ref={branchSelectRef}
-                    className={`min-h-11 rounded-xl border bg-white px-3.5 text-sm font-semibold outline-none focus:border-brand-red focus:ring-4 focus:ring-brand-red-soft disabled:bg-line-soft ${!branchId && error ? "border-brand-red" : "border-line"}`}
-                    value={branchId}
-                    disabled={isEditing || branchesQuery.isPending || branchesQuery.isError}
-                    aria-invalid={!branchId && Boolean(error)}
-                    onChange={(event) => { setBranchId(event.target.value); setError(null); }}
-                  >
-                    <option value="">{branchesQuery.isPending ? "Loading branches..." : branchesQuery.isError ? "Branches unavailable" : "Select an active branch"}</option>
-                    {(branchesQuery.data?.data ?? []).map((branch: Branch) => <option value={branch.id} key={branch.id}>{branch.name}</option>)}
-                    {isEditing && order && <option value={order.branchId}>{order.branch.name}</option>}
-                  </select>
-                  {branchesQuery.isError && <button className="justify-self-start text-xs font-bold text-brand-red hover:underline" type="button" onClick={() => void branchesQuery.refetch()}>Retry loading branches</button>}
-                </label>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <Building2 className="text-brand-red" size={18} />
-                  <div><p className="text-[0.68rem] font-extrabold uppercase tracking-wide text-muted">Order branch</p><p className="mt-0.5 text-sm font-bold text-ink">{order?.branch.name ?? actor.branch?.name ?? "Assigned branch"}</p></div>
-                </div>
-              )}
-            </div>
             {cart.length === 0 ? <div className="grid min-h-44 place-items-center p-6 text-center"><div><ShoppingBag className="mx-auto text-brand-gold-dark" /><p className="mt-3 text-sm font-bold">Your order is empty</p><p className="mt-1 text-xs text-muted">Choose a product to add the first item.</p></div></div> : <div className="max-h-[45vh] divide-y divide-line overflow-y-auto">{cart.map((item) => { const product = (menuQuery.data ?? []).find((entry) => entry.variants.some((variant) => variant.id === item.productVariantId)); return <CartRow key={item.clientKey} item={item} product={product} onCustomize={product ? () => setConfiguration({ product, item }) : undefined} onRemove={() => setCart((current) => current.filter((entry) => entry.clientKey !== item.clientKey))} onQuantity={(quantity) => updateItem(item.clientKey, (current) => ({ ...current, quantity }))} onAddonQuantity={(addonId, quantity) => updateItem(item.clientKey, (current) => ({ ...current, addons: quantity === 0 ? current.addons.filter((addon) => addon.addonId !== addonId) : current.addons.map((addon) => addon.addonId === addonId ? { ...addon, quantity } : addon) }))} />; })}</div>}
 
             <div className="space-y-4 border-t border-line bg-surface p-4">
@@ -215,7 +176,7 @@ function CartRow({ item, product, onCustomize, onRemove, onQuantity, onAddonQuan
 function MoneyRow({ label, value, strong = false }: { label: string; value: number; strong?: boolean }) { return <div className={`flex justify-between ${strong ? "text-base font-extrabold" : "text-muted"}`}><dt>{label}</dt><dd className={strong ? "text-brand-red" : "font-bold text-ink"}>{value < 0 ? "− " : ""}{formatMoney(minorToMoney(Math.abs(value)))}</dd></div>; }
 
 const itemSignature = (item: CartItem) => `${item.productVariantId}:${[...item.addons].sort((a,b) => a.addonId - b.addonId).map((addon) => `${addon.addonId}-${addon.quantity}`).join(",")}`;
-const snapshot = (cart: CartItem[], branchId: string, discountType: DiscountType | null, discountValue: string, taxPercent: string) => JSON.stringify({ cart, branchId, discountType, discountValue, taxPercent });
+const snapshot = (cart: CartItem[], discountType: DiscountType | null, discountValue: string, taxPercent: string) => JSON.stringify({ cart, discountType, discountValue, taxPercent });
 
 const cartFromOrder = (order: Order): CartItem[] =>
   order.items.map((item) => ({

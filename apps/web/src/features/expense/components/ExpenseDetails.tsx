@@ -63,7 +63,6 @@ export function ExpenseDetails({ expense }: { expense: Expense }) {
       <dl className="grid gap-4 sm:grid-cols-2">
         <Detail label="Category" value={formatExpenseCategory(expense.category)} />
         <Detail label="Expense date" value={dateFormatter.format(new Date(`${expense.expenseDate}T00:00:00`))} />
-        <Detail label="Branch" value={expense.branch?.name ?? "Restaurant-wide"} />
         <Detail label="Created by" value={expense.createdBy.name} />
         <Detail label="Created" value={dateTimeFormatter.format(new Date(expense.createdAt))} />
         <Detail label="Last updated by" value={expense.updatedBy.name} />

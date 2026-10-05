@@ -26,10 +26,6 @@ export class LoginProvider {
       throw new ForbiddenException('User is not active');
     }
 
-    if (user.branchId && !user.branch?.isActive) {
-      throw new ForbiddenException('Branch is inactive');
-    }
-
     const updatedUser = await this.usersService.updateLastLogin(user.id);
 
     // Generate JWT token

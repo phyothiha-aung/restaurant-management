@@ -3,7 +3,6 @@ import { AppShell } from "./components/layout/AppShell";
 import { LoginPage } from "./pages/LoginPage";
 import { OverviewPage } from "./pages/OverviewPage";
 import { UsersPage } from "./pages/UsersPage";
-import { BranchesPage } from "./pages/BranchesPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { ExpensesPage } from "./pages/ExpensesPage";
 import { ProductCategoriesPage } from "./pages/ProductCategoriesPage";
@@ -35,7 +34,6 @@ export function AppRoutes() {
           <Route element={<GlobalManagerOnlyRoute />}>
             <Route path="product-categories" element={<ProductCategoriesPage />} />
           </Route>
-          <Route path="branches" element={<BranchesPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="orders" element={<OrdersPage />} />
           <Route path="orders/:id" element={<OrderDetailPage />} />

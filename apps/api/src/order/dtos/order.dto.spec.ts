@@ -13,7 +13,6 @@ const item = {
 describe('order DTOs', () => {
   it('defaults tax to zero and add-on collections to an array', () => {
     const result = CreateOrderSchema.parse({
-      branchId: 1,
       items: [{ productVariantId: 10, quantity: 1 }],
     });
     expect(result.taxPercent).toBe('0');

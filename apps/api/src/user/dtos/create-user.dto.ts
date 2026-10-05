@@ -13,7 +13,6 @@ export const CreateUserSchema = z.object({
     .max(72, 'Password cannot exceed 72 characters'),
   role: z.enum(UserRole).default(UserRole.WAITER),
   status: z.enum(UserStatus).default(UserStatus.PENDING),
-  branchId: z.number().int().positive().optional().nullable(),
 });
 
 export class CreateUserDto extends createZodDto(CreateUserSchema) {}

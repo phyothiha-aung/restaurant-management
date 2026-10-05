@@ -1,4 +1,4 @@
-import type { Branch, User, UserRole } from "@restaurant-management/shared";
+import type { User, UserRole } from "@restaurant-management/shared";
 import { Edit3, Power, PowerOff } from "lucide-react";
 import { Button } from "../../../components/ui/Button";
 import { Drawer } from "../../../components/ui/Drawer";
@@ -18,8 +18,6 @@ interface UserDrawerProps {
   mode: UserDrawerMode;
   userId: number | null;
   actorRole: UserRole;
-  branches: Branch[];
-  branchesLoading: boolean;
   onClose: () => void;
   onEdit: () => void;
   onRequestDeactivate: (user: User) => void;
@@ -30,8 +28,6 @@ export function UserDrawer({
   mode,
   userId,
   actorRole,
-  branches,
-  branchesLoading,
   onClose,
   onEdit,
   onRequestDeactivate,
@@ -47,7 +43,7 @@ export function UserDrawer({
     mode === "create"
       ? "Create a staff account and assign its access level."
       : mode === "edit"
-        ? "Update account details, access, and branch assignment."
+        ? "Update account details and restaurant access."
         : "Review this account's access and recent activity.";
 
   const handleSubmit = (input: UserFormSubmission) => {
@@ -97,8 +93,6 @@ export function UserDrawer({
       {mode === "create" ? (
         <UserForm
           actorRole={actorRole}
-          branches={branches}
-          branchesLoading={branchesLoading}
           isLoading={createMutation.isPending}
           onCancel={handleClose}
           onSubmit={handleSubmit}
@@ -118,8 +112,6 @@ export function UserDrawer({
       ) : user && mode === "edit" ? (
         <UserForm
           actorRole={actorRole}
-          branches={branches}
-          branchesLoading={branchesLoading}
           user={user}
           isLoading={updateMutation.isPending}
           onCancel={handleClose}

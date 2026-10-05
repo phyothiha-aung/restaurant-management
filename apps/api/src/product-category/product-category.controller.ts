@@ -25,7 +25,6 @@ const categoryReaderRoles = [
   UserRole.ADMIN,
   UserRole.OWNER,
   UserRole.MANAGER,
-  UserRole.BRANCH_MANAGER,
 ];
 
 const categoryManagerRoles = [

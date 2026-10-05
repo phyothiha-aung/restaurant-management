@@ -7,7 +7,6 @@ import { OrderDateSchema } from './order-validation.js';
 export const OrderQuerySchema = PaginationQuerySchema.omit({ search: true })
   .extend({
     status: z.enum(OrderStatus).optional(),
-    branchId: z.coerce.number().int().positive().optional(),
     createdById: z.coerce.number().int().positive().optional(),
     dateFrom: OrderDateSchema.optional(),
     dateTo: OrderDateSchema.optional(),

@@ -5,7 +5,6 @@ import environmentValidation from './environment.validation.js';
 import { AuthModule } from './auth/auth.module.js';
 import { UserModule } from './user/user.module.js';
 import { CryptoModule } from './common/crypto/crypto.module.js';
-import { BranchModule } from './branch/branch.module.js';
 import { APP_GUARD, Reflector } from '@nestjs/core';
 import { AccessTokenGuard } from './auth/guards/access-token.guard.js';
 import { AuthenticationGuard } from './auth/guards/authentication.guard.js';
@@ -39,7 +38,6 @@ const ENV = process.env.NODE_ENV;
     }),
     AuthModule,
     UserModule,
-    BranchModule,
     ExpenseModule,
     StorageModule,
     ProductCategoryModule,

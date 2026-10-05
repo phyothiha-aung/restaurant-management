@@ -2,7 +2,7 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { HashingProvider } from '../../common/crypto/provider/hashing.provider.js';
 import { UserStatus } from '../../generated/prisma/enums.js';
-import type { Prisma, User } from '../../generated/prisma/client.js';
+import type { User } from '../../generated/prisma/client.js';
 
 export interface RefreshTokenDraft {
   accessToken: string;
@@ -12,9 +12,7 @@ export interface RefreshTokenDraft {
   expiredAt: Date;
 }
 
-export type AuthUser = User & {
-  branch: Prisma.BranchGetPayload<object> | null;
-};
+export type AuthUser = User;
 
 @Injectable()
 export class RefreshTokenProvider {
@@ -32,7 +30,7 @@ export class RefreshTokenProvider {
     return this.prisma.$transaction(async (transaction) => {
       const storedToken = await transaction.refreshToken.findUnique({
         where: { jti },
-        include: { user: { include: { branch: true } } },
+        include: { user: true },
       });
 
       if (!storedToken || storedToken.userId !== userId || !storedToken.user) {
@@ -48,9 +46,7 @@ export class RefreshTokenProvider {
       const user = storedToken.user;
       const isExpired = storedToken.expiredAt <= new Date();
       const isInactiveUser = user.status !== UserStatus.ACTIVE;
-      const isInactiveBranch = user.branchId !== null && !user.branch?.isActive;
-
-      if (isExpired || isInactiveUser || isInactiveBranch) {
+      if (isExpired || isInactiveUser) {
         await transaction.refreshToken.deleteMany({
           where: { id: storedToken.id, jti, userId },
         });

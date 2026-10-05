@@ -1,6 +1,5 @@
 import type { User, UserStatus } from "@restaurant-management/shared";
 import {
-  Building2,
   Edit3,
   Eye,
   Mail,
@@ -46,7 +45,6 @@ export function UserList({
             <tr className="border-b border-line bg-surface text-[0.68rem] font-extrabold uppercase tracking-[0.08em] text-muted">
               <th className="px-5 py-3.5">User</th>
               <th className="px-4 py-3.5">Role</th>
-              <th className="px-4 py-3.5">Branch</th>
               <th className="px-4 py-3.5">Status</th>
               <th className="px-4 py-3.5">Last login</th>
               <th className="px-4 py-3.5">Updated</th>
@@ -71,11 +69,6 @@ export function UserList({
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 text-xs font-semibold text-ink">
                     {formatRole(user.role)}
-                  </td>
-                  <td className="max-w-48 px-4 py-4 text-xs text-muted">
-                    <span className="block truncate">
-                      {user.branch?.name ?? "Restaurant-wide"}
-                    </span>
                   </td>
                   <td className="px-4 py-4">
                     <Badge tone={statusTone[user.status]}>{user.status}</Badge>
@@ -134,10 +127,6 @@ export function UserList({
                 <p className="flex items-center gap-2 font-semibold text-ink">
                   <ShieldCheck className="shrink-0 text-brand-red" size={14} />
                   {formatRole(user.role)}
-                </p>
-                <p className="flex items-center gap-2">
-                  <Building2 className="shrink-0" size={14} />
-                  {user.branch?.name ?? "Restaurant-wide"}
                 </p>
                 <p className="flex items-center gap-2">
                   <Mail className="shrink-0" size={14} />

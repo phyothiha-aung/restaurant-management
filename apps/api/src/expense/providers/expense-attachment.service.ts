@@ -19,7 +19,6 @@ import {
   StoredFilePurpose,
   StoredFileStatus,
 } from '../../generated/prisma/enums.js';
-import type { User } from '../../generated/prisma/client.js';
 import { ActiveUserDto } from '../../auth/dtos/active-user.dto.js';
 import { PresignExpenseAttachmentDto } from '../dtos/presign-expense-attachment.dto.js';
 import { AddExpenseAttachmentsDto } from '../dtos/add-expense-attachments.dto.js';
@@ -138,7 +137,7 @@ export class ExpenseAttachmentService {
     activeUser: ActiveUserDto,
   ) {
     const actor = await this.requireManager(activeUser.sub);
-    const expense = await this.requireScopedExpense(expenseId, actor);
+    const expense = await this.requireExpense(expenseId);
     if (expense.status === ExpenseStatus.VOIDED) {
       throw new ConflictException('Voided expenses cannot receive attachments');
     }
@@ -168,14 +167,11 @@ export class ExpenseAttachmentService {
     attachmentId: number,
     activeUser: ActiveUserDto,
   ) {
-    const actor = await this.requireManager(activeUser.sub);
+    await this.requireManager(activeUser.sub);
     const attachment = await this.prisma.expenseAttachment.findFirst({
       where: {
         id: attachmentId,
         expenseId,
-        ...(!this.permission.isGlobalRole(actor.role) && {
-          expense: { branchId: actor.branchId ?? -1 },
-        }),
       },
       include: { file: true },
     });
@@ -217,14 +213,9 @@ export class ExpenseAttachmentService {
     return actor;
   }
 
-  private async requireScopedExpense(id: number, actor: User) {
-    const expense = await this.prisma.expense.findFirst({
-      where: {
-        id,
-        ...(!this.permission.isGlobalRole(actor.role) && {
-          branchId: actor.branchId ?? -1,
-        }),
-      },
+  private async requireExpense(id: number) {
+    const expense = await this.prisma.expense.findUnique({
+      where: { id },
       select: { status: true, _count: { select: { attachments: true } } },
     });
     if (!expense) throw new NotFoundException('Expense not found');

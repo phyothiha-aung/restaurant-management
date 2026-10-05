@@ -19,7 +19,6 @@ export interface ExpenseListQuery {
   search?: string;
   category?: ExpenseCategory;
   status?: ExpenseStatus;
-  branchId?: number;
   dateFrom?: string;
   dateTo?: string;
 }
@@ -30,7 +29,6 @@ export interface CreateExpenseInput {
   category: ExpenseCategory;
   amount: string;
   expenseDate: string;
-  branchId?: number | null;
   attachmentIds?: string[];
 }
 

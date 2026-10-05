@@ -5,12 +5,11 @@ import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Pagination } from "../components/ui/Pagination";
-import { useBranches } from "../features/branch/branch-services";
 import { OrderList } from "../features/order/components/OrderList";
 import { useOrders } from "../features/order/order-services";
 import { isOrderStatus } from "../features/order/order-utils";
 import { getApiErrorMessage } from "../lib/api-error";
-import { canOperateOrders, managementRoles } from "../lib/user-display";
+import { canOperateOrders } from "../lib/user-display";
 import { useAuthStore } from "../store/useAuthStore";
 
 const PAGE_LIMIT = 10;
@@ -34,8 +33,6 @@ export function OrdersPage() {
   const page = parsePositiveInt(params.get("page")) ?? 1;
   const statusParam = params.get("status");
   const status = isOrderStatus(statusParam) ? statusParam : undefined;
-  const isGlobal = actor ? managementRoles.includes(actor.role) : false;
-  const branchId = isGlobal ? parsePositiveInt(params.get("branchId")) : undefined;
   const dateFrom = parseDate(params.get("dateFrom"));
   const parsedDateTo = parseDate(params.get("dateTo"));
   const dateTo = dateFrom && parsedDateTo && dateFrom > parsedDateTo
@@ -48,17 +45,12 @@ export function OrdersPage() {
       page,
       limit: PAGE_LIMIT,
       ...(status && { status }),
-      ...(branchId && { branchId }),
       ...(dateFrom && { dateFrom }),
       ...(dateTo && { dateTo }),
     }),
-    [branchId, dateFrom, dateTo, page, status],
+    [dateFrom, dateTo, page, status],
   );
   const ordersQuery = useOrders(query);
-  const branchesQuery = useBranches(
-    { page: 1, limit: 100 },
-    { enabled: isGlobal },
-  );
 
   useEffect(() => {
     const totalPages = ordersQuery.data?.meta.totalPages;
@@ -72,7 +64,7 @@ export function OrdersPage() {
   if (!actor) return null;
 
   const setFilter = (
-    key: "status" | "branchId" | "dateFrom" | "dateTo",
+    key: "status" | "dateFrom" | "dateTo",
     value: string,
   ) => {
     const next = new URLSearchParams(params);
@@ -94,14 +86,14 @@ export function OrdersPage() {
   };
 
   const orders = ordersQuery.data?.data ?? [];
-  const hasFilters = Boolean(status || branchId || dateFrom || dateTo);
+  const hasFilters = Boolean(status || dateFrom || dateTo);
 
   return (
     <div className="space-y-7">
       <PageHeader
         eyebrow="Sales workspace"
         title="Orders"
-        description="Create branch orders and review their complete sales history."
+        description="Create orders and review their complete sales history."
         action={
           canOperate ? (
             <Link
@@ -125,23 +117,6 @@ export function OrdersPage() {
           <option value="COMPLETED">Completed</option>
           <option value="CANCELLED">Cancelled</option>
         </FilterSelect>
-        {isGlobal && (
-          <FilterSelect
-            label="Branch"
-            value={branchId?.toString() ?? "all"}
-            disabled={branchesQuery.isPending || branchesQuery.isError}
-            onChange={(value) => setFilter("branchId", value)}
-          >
-            <option value="all">
-              {branchesQuery.isError ? "Branches unavailable" : "All branches"}
-            </option>
-            {(branchesQuery.data?.data ?? []).map((branch) => (
-              <option value={branch.id} key={branch.id}>
-                {branch.name}{branch.isActive ? "" : " (Inactive)"}
-              </option>
-            ))}
-          </FilterSelect>
-        )}
         <DateInput
           label="Created from"
           value={dateFrom ?? ""}

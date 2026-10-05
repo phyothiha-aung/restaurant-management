@@ -2,8 +2,7 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { UserRole } from '../../generated/prisma/enums.js';
 import {
-  BRANCH_MANAGER_ROLES,
-  GLOBAL_ROLES,
+  MANAGER_ROLES,
   ROLE_HIERARCHY,
   USER_MANAGER_ROLES,
 } from '../constants/user.constant.js';
@@ -21,28 +20,12 @@ export class PermissionProvider {
     );
   }
 
-  isGlobalRole(role: UserRole) {
-    return GLOBAL_ROLES.has(role);
-  }
-
   isUserManager(role: UserRole) {
     return USER_MANAGER_ROLES.has(role);
   }
 
-  isBranchManager(role: UserRole) {
-    return BRANCH_MANAGER_ROLES.has(role);
-  }
-
-  validateOwnership(actor: User, targetBranchId: number | null) {
-    if (GLOBAL_ROLES.has(actor.role)) return true;
-
-    if (!actor.branchId || actor.branchId !== targetBranchId) {
-      throw new ForbiddenException(
-        'You do not have permission to manage this branch',
-      );
-    }
-
-    return true;
+  isManager(role: UserRole) {
+    return MANAGER_ROLES.has(role);
   }
 
   assertCanManageUser(actor: User, target: User) {
@@ -59,22 +42,14 @@ export class PermissionProvider {
     if (!this.canManageRole(actor.role, target.role)) {
       throw new ForbiddenException('You cannot manage this user role');
     }
-
-    this.validateOwnership(actor, target.branchId);
   }
 
-  assertCanAssignRole(
-    actor: User,
-    targetRole: UserRole,
-    targetBranchId: number | null,
-  ) {
+  assertCanAssignRole(actor: User, targetRole: UserRole) {
     if (
       !this.isUserManager(actor.role) ||
       !this.canManageRole(actor.role, targetRole)
     ) {
       throw new ForbiddenException('You cannot assign this user role');
     }
-
-    this.validateOwnership(actor, targetBranchId);
   }
 }

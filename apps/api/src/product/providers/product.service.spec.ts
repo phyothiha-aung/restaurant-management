@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { UserRole } from '../../generated/prisma/enums.js';
 import { ProductService } from './product.service.js';
 
-const actor = { id: 1, role: UserRole.MANAGER, branchId: null };
+const actor = { id: 1, role: UserRole.MANAGER };
 const money = (value: string) => ({ toString: () => value });
 
 const productRecord = {
@@ -78,7 +78,7 @@ const createService = () => {
   const pagination: any = { paginateRawQuery: vi.fn() };
   const permission: any = {
     isUserManager: vi.fn().mockReturnValue(true),
-    isBranchManager: vi.fn().mockReturnValue(true),
+    isManager: vi.fn().mockReturnValue(true),
   };
   const users: any = { requireUser: vi.fn().mockResolvedValue(actor) };
   return {
@@ -239,7 +239,7 @@ describe('ProductService aggregate writes', () => {
 
   it('denies product mutation when the actor is not a global manager', async () => {
     const { service, permission } = createService();
-    permission.isBranchManager.mockReturnValue(false);
+    permission.isManager.mockReturnValue(false);
 
     await expect(
       service.deactivate(10, { sub: actor.id } as any),
@@ -270,11 +270,11 @@ describe('ProductService central menu', () => {
   it('does not require manager permission for authenticated menu readers', async () => {
     const { service, prisma, permission } = createService();
     permission.isUserManager.mockReturnValue(false);
-    permission.isBranchManager.mockReturnValue(false);
+    permission.isManager.mockReturnValue(false);
     prisma.product.findMany.mockResolvedValue([]);
 
     await expect(service.menu({ sub: 99 } as any)).resolves.toEqual([]);
     expect(permission.isUserManager).not.toHaveBeenCalled();
-    expect(permission.isBranchManager).not.toHaveBeenCalled();
+    expect(permission.isManager).not.toHaveBeenCalled();
   });
 });

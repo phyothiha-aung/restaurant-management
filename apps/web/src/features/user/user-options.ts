@@ -5,7 +5,6 @@ export const USER_ROLES = [
   "ADMIN",
   "OWNER",
   "MANAGER",
-  "BRANCH_MANAGER",
   "CASHIER",
   "CHEF",
   "WAITER",
@@ -17,26 +16,15 @@ export const USER_STATUSES = [
   "INACTIVE",
 ] as const satisfies readonly UserStatus[];
 
-export const GLOBAL_USER_ROLES = new Set<UserRole>([
-  "SUPERADMIN",
-  "ADMIN",
-  "OWNER",
-  "MANAGER",
-]);
-
 const ROLE_RANK: Record<UserRole, number> = {
   SUPERADMIN: 100,
   ADMIN: 90,
   OWNER: 80,
   MANAGER: 70,
-  BRANCH_MANAGER: 60,
   CASHIER: 50,
   CHEF: 50,
   WAITER: 50,
 };
-
-export const isGlobalUserRole = (role: UserRole) =>
-  GLOBAL_USER_ROLES.has(role);
 
 export const getManageableRoles = (actorRole: UserRole) =>
   USER_ROLES.filter((role) => ROLE_RANK[actorRole] > ROLE_RANK[role]);

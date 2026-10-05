@@ -1,5 +1,4 @@
 import {
-  Building2,
   Edit3,
   Mail,
   RefreshCw,
@@ -72,11 +71,6 @@ export function ProfilePage() {
           <div className="mt-7 grid gap-3 sm:grid-cols-2">
             <ProfileDetail icon={Mail} label="Email" value={user.email ?? "Not available"} />
             <ProfileDetail icon={ShieldCheck} label="Role" value={formatRole(user.role)} />
-            <ProfileDetail
-              icon={Building2}
-              label="Branch"
-              value={user.branch?.name ?? "Restaurant-wide access"}
-            />
             <ProfileDetail icon={UserRound} label="Account status" value={user.status} />
           </div>
         </div>

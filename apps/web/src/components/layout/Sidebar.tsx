@@ -1,5 +1,4 @@
 import {
-  Building2,
   LayoutDashboard,
   LogOut,
   ReceiptText,
@@ -48,12 +47,6 @@ export function Sidebar({ onNavigate, onClose }: SidebarProps) {
       label: "Users",
       icon: Users,
       visible: canManageUsers(user.role),
-    },
-    {
-      to: "/branches",
-      label: user.branchId ? "My Branch" : "Branches",
-      icon: Building2,
-      visible: true,
     },
     {
       to: "/expenses",

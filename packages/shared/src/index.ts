@@ -3,7 +3,6 @@ export type UserRole =
   | "ADMIN"
   | "OWNER"
   | "MANAGER"
-  | "BRANCH_MANAGER"
   | "WAITER"
   | "CHEF"
   | "CASHIER";
@@ -40,21 +39,6 @@ export interface ApiErrorResponse {
   statusCode: number;
 }
 
-export interface BranchSummary {
-  id: number;
-  branchCode: string | null;
-  name: string;
-  isActive: boolean;
-}
-
-export interface Branch extends BranchSummary {
-  address: string | null;
-  phone: string | null;
-  userCount: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface PaginationMeta {
   itemsPerPage: number;
   totalItems: number;
@@ -78,7 +62,6 @@ export interface PaginatedResponse<T> {
 
 export interface User {
   id: number;
-  branchId: number | null;
   name: string;
   email: string | null;
   role: UserRole;
@@ -87,7 +70,6 @@ export interface User {
   createdAt: string;
   updatedAt: string;
   verifiedAt: string | null;
-  branch: BranchSummary | null;
 }
 
 export interface ExpenseUserSummary {
@@ -209,7 +191,6 @@ export interface Addon {
 
 export interface Expense {
   id: number;
-  branchId: number | null;
   createdById: number;
   updatedById: number;
   voidedById: number | null;
@@ -223,7 +204,6 @@ export interface Expense {
   voidedAt: string | null;
   createdAt: string;
   updatedAt: string;
-  branch: BranchSummary | null;
   createdBy: ExpenseUserSummary;
   updatedBy: ExpenseUserSummary;
   voidedBy: ExpenseUserSummary | null;
@@ -261,7 +241,6 @@ export interface OrderItem {
 
 export interface OrderSummary {
   id: number;
-  branchId: number;
   createdById: number;
   updatedById: number;
   status: OrderStatus;
@@ -276,7 +255,6 @@ export interface OrderSummary {
   cancelledAt: string | null;
   createdAt: string;
   updatedAt: string;
-  branch: BranchSummary;
   createdBy: OrderUserSummary;
   updatedBy: OrderUserSummary;
   itemCount: number;

@@ -25,13 +25,12 @@ const createService = () => {
   const pagination: any = {};
   const permission: any = {
     isUserManager: vi.fn().mockReturnValue(true),
-    isBranchManager: vi.fn().mockReturnValue(true),
+    isManager: vi.fn().mockReturnValue(true),
   };
   const users: any = {
     requireUser: vi.fn().mockResolvedValue({
       id: 1,
       role: UserRole.MANAGER,
-      branchId: null,
     }),
   };
   return {
@@ -66,9 +65,9 @@ describe('AddonService', () => {
     expect(prisma.productAddon).toBeUndefined();
   });
 
-  it('denies mutation to branch managers', async () => {
+  it('denies mutation to operational users', async () => {
     const { service, permission } = createService();
-    permission.isBranchManager.mockReturnValue(false);
+    permission.isManager.mockReturnValue(false);
 
     await expect(
       service.create({ name: 'Milk', unitPrice: '300', isActive: true }, {

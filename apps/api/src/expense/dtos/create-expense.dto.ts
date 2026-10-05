@@ -13,7 +13,6 @@ export const CreateExpenseSchema = z.object({
   category: z.enum(ExpenseCategory),
   amount: ExpenseAmountSchema,
   expenseDate: ExpenseDateSchema,
-  branchId: z.number().int().positive().optional().nullable(),
   attachmentIds: AttachmentIdsSchema.optional(),
 });
 

@@ -1,6 +1,5 @@
 import type { Expense, ExpenseStatus } from "@restaurant-management/shared";
 import {
-  Building2,
   CalendarDays,
   Edit3,
   Eye,
@@ -49,7 +48,6 @@ export function ExpenseList({
               <th className="px-5 py-3.5">Expense</th>
               <th className="px-4 py-3.5">Amount</th>
               <th className="px-4 py-3.5">Date</th>
-              <th className="px-4 py-3.5">Branch</th>
               <th className="px-4 py-3.5">Status</th>
               <th className="px-4 py-3.5">Updated</th>
               <th className="px-5 py-3.5 text-right">
@@ -79,11 +77,6 @@ export function ExpenseList({
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 text-xs text-muted">
                     {formatExpenseDate(expense.expenseDate)}
-                  </td>
-                  <td className="max-w-48 px-4 py-4 text-xs text-muted">
-                    <span className="block truncate">
-                      {expense.branch?.name ?? "Restaurant-wide"}
-                    </span>
                   </td>
                   <td className="px-4 py-4">
                     <Badge tone={statusTone[expense.status]}>{expense.status}</Badge>
@@ -142,10 +135,6 @@ export function ExpenseList({
                 <p className="flex items-center gap-2">
                   <CalendarDays className="shrink-0" size={14} />
                   {formatExpenseDate(expense.expenseDate)}
-                </p>
-                <p className="flex items-center gap-2">
-                  <Building2 className="shrink-0" size={14} />
-                  {expense.branch?.name ?? "Restaurant-wide"}
                 </p>
                 <p className="flex items-center gap-2">
                   <Paperclip className="shrink-0" size={14} />

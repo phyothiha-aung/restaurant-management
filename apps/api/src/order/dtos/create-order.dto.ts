@@ -48,7 +48,6 @@ export const OrderDiscountSchema = z
   });
 
 export const CreateOrderSchema = z.object({
-  branchId: z.number().int().positive().optional(),
   items: z
     .array(
       OrderItemFieldsSchema.omit({ id: true }).superRefine(

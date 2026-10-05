@@ -1,10 +1,9 @@
-import { ArrowRight, Building2, Check, UserPlus, Users } from "lucide-react";
+import { ArrowRight, ShoppingCart, UserPlus, Users, UtensilsCrossed } from "lucide-react";
 import { useNavigate } from "react-router";
 import { Badge } from "../components/ui/Badge";
-import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { PageHeader } from "../components/ui/PageHeader";
-import { canManageBranches, canManageUsers, formatRole } from "../lib/user-display";
+import { canManageUsers, formatRole } from "../lib/user-display";
 import { useAuthStore } from "../store/useAuthStore";
 
 export function OverviewPage() {
@@ -15,7 +14,6 @@ export function OverviewPage() {
 
   const firstName = user.name.trim().split(/\s+/)[0];
   const managesUsers = canManageUsers(user.role);
-  const managesBranches = canManageBranches(user.role);
 
   return (
     <div className="space-y-8">
@@ -33,12 +31,10 @@ export function OverviewPage() {
             Your workspace
           </p>
           <h2 className="mt-3 font-heading text-2xl font-bold sm:text-3xl">
-            {user.branch?.name ?? "Restaurant-wide access"}
+            Ann Htike restaurant operations
           </h2>
           <p className="mt-3 max-w-xl text-sm leading-6 text-white/75">
-            {user.branch
-              ? "View your branch details and keep your team information up to date."
-              : "Manage restaurant branches, team access, and account information from one place."}
+            Manage orders, the central menu, team access, and restaurant records from one place.
           </p>
         </div>
       </section>
@@ -60,14 +56,10 @@ export function OverviewPage() {
             />
           )}
           <ActionCard
-            icon={Building2}
-            title={user.branchId ? "View my branch" : "Manage branches"}
-            description={
-              user.branchId
-                ? "Review your assigned branch information."
-                : "Review restaurant locations and availability."
-            }
-            onClick={() => navigate("/branches")}
+            icon={ShoppingCart}
+            title="Manage orders"
+            description="Create orders and review restaurant sales."
+            onClick={() => navigate("/orders")}
           />
           <ActionCard
             icon={Users}
@@ -75,40 +67,16 @@ export function OverviewPage() {
             description="Review your account and personal information."
             onClick={() => navigate("/profile")}
           />
+          {managesUsers && (
+            <ActionCard
+              icon={UtensilsCrossed}
+              title="Manage catalog"
+              description="Maintain products, variants, and reusable add-ons."
+              onClick={() => navigate("/catalog")}
+            />
+          )}
         </div>
       </section>
-
-      {managesBranches && (
-        <Card className="p-6 sm:p-7">
-          <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
-            <div>
-              <Badge tone="red">Getting started</Badge>
-              <h2 className="mt-3 text-lg font-extrabold">Restaurant setup checklist</h2>
-              <p className="mt-1 text-sm text-muted">
-                A simple guide for preparing the Ann Htike workspace.
-              </p>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => navigate("/branches")}>
-              Review setup <ArrowRight size={15} />
-            </Button>
-          </div>
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            {["Confirm restaurant branches", "Add branch managers", "Add restaurant staff"].map(
-              (item, index) => (
-                <div
-                  key={item}
-                  className="flex items-center gap-3 rounded-xl bg-surface p-3.5 text-sm font-semibold"
-                >
-                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-gold-soft text-brand-gold-dark">
-                    {index === 0 ? <Check size={15} /> : index + 1}
-                  </span>
-                  {item}
-                </div>
-              ),
-            )}
-          </div>
-        </Card>
-      )}
     </div>
   );
 }

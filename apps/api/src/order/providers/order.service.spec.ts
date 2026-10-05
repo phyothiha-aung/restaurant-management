@@ -9,18 +9,14 @@ import { Prisma } from '../../generated/prisma/client.js';
 import { OrderService } from './order.service.js';
 
 const createService = (role: UserRole = UserRole.MANAGER) => {
-  const actor = { id: 1, role, branchId: role === UserRole.MANAGER ? null : 2 };
+  const actor = { id: 1, role };
   const prisma: any = {
-    branch: { findUnique: vi.fn().mockResolvedValue({ isActive: true }) },
     order: { findFirst: vi.fn() },
   };
   const pagination: any = { paginateRawQuery: vi.fn() };
-  const permission: any = {
-    isGlobalRole: vi.fn().mockReturnValue(role === UserRole.MANAGER),
-  };
   const users: any = { requireUser: vi.fn().mockResolvedValue(actor) };
   return {
-    service: new OrderService(prisma, pagination, permission, users),
+    service: new OrderService(prisma, pagination, users),
     prisma,
     actor,
   };
@@ -56,26 +52,6 @@ describe('OrderService calculations and permissions', () => {
     await expect(service.cancel(1, { sub: 1 } as any)).rejects.toBeInstanceOf(
       ForbiddenException,
     );
-  });
-
-  it('defaults branch staff to their assigned branch', async () => {
-    const { service } = createService(UserRole.CASHIER);
-    await expect(
-      (service as any).resolveCreateBranch(
-        { id: 1, role: UserRole.CASHIER, branchId: 2 },
-        undefined,
-      ),
-    ).resolves.toBe(2);
-  });
-
-  it('requires global operators to specify a branch', async () => {
-    const { service } = createService();
-    await expect(
-      (service as any).resolveCreateBranch(
-        { id: 1, role: UserRole.MANAGER, branchId: null },
-        undefined,
-      ),
-    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('keeps existing variant and add-on snapshot prices after catalog changes', async () => {

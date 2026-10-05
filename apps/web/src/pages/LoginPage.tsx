@@ -45,10 +45,10 @@ export function LoginPage() {
               Keep your restaurant team connected.
             </h1>
             <p className="mt-6 max-w-md text-base leading-7 text-white/75">
-              Manage people, branches, and access for Ann Htike from one simple place.
+              Manage people, orders, expenses, and the menu for Ann Htike from one simple place.
             </p>
             <div className="mt-9 space-y-3 text-sm font-semibold text-white/85">
-              {["Clear role-based access", "Simple branch management", "Built for daily restaurant work"].map(
+              {["Clear role-based access", "Simple order management", "Built for daily restaurant work"].map(
                 (item) => (
                   <div className="flex items-center gap-3" key={item}>
                     <span className="grid h-6 w-6 place-items-center rounded-full bg-brand-gold text-gold-ink">

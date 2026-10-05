@@ -11,10 +11,7 @@ import { PermissionProvider } from '../../user/providers/permission.provider.js'
 import { UserService } from '../../user/providers/user.service.js';
 import { ActiveUserDto } from '../../auth/dtos/active-user.dto.js';
 import { ExpenseStatus } from '../../generated/prisma/enums.js';
-import type {
-  Prisma,
-  User,
-} from '../../generated/prisma/client.js';
+import type { Prisma } from '../../generated/prisma/client.js';
 import { CreateExpenseDto } from '../dtos/create-expense.dto.js';
 import { UpdateExpenseDto } from '../dtos/update-expense.dto.js';
 import { VoidExpenseDto } from '../dtos/void-expense.dto.js';
@@ -28,7 +25,6 @@ import {
 
 const expenseSelect = {
   id: true,
-  branchId: true,
   createdById: true,
   updatedById: true,
   voidedById: true,
@@ -42,14 +38,6 @@ const expenseSelect = {
   voidedAt: true,
   createdAt: true,
   updatedAt: true,
-  branch: {
-    select: {
-      id: true,
-      branchCode: true,
-      name: true,
-      isActive: true,
-    },
-  },
   createdBy: { select: { id: true, name: true } },
   updatedBy: { select: { id: true, name: true } },
   voidedBy: { select: { id: true, name: true } },
@@ -90,15 +78,11 @@ export class ExpenseService {
     activeUser: ActiveUserDto,
     request: Request,
   ) {
-    const actor = await this.requireExpenseManager(activeUser.sub);
+    await this.requireExpenseManager(activeUser.sub);
     const filters: Prisma.ExpenseWhereInput[] = [
       { status: query.status },
     ];
 
-    if (!this.permission.isGlobalRole(actor.role)) {
-      filters.push({ branchId: actor.branchId ?? -1 });
-    }
-    if (query.branchId) filters.push({ branchId: query.branchId });
     if (query.category) filters.push({ category: query.category });
     if (query.dateFrom || query.dateTo) {
       filters.push({
@@ -136,14 +120,13 @@ export class ExpenseService {
   }
 
   async findOne(id: number, activeUser: ActiveUserDto) {
-    const actor = await this.requireExpenseManager(activeUser.sub);
-    const expense = await this.requireScopedExpense(id, actor);
+    await this.requireExpenseManager(activeUser.sub);
+    const expense = await this.requireExpense(id);
     return toExpenseResponse(expense);
   }
 
   async create(dto: CreateExpenseDto, activeUser: ActiveUserDto) {
     const actor = await this.requireExpenseManager(activeUser.sub);
-    const branchId = await this.resolveCreateBranch(actor, dto.branchId);
     const attachmentIds = dto.attachmentIds ?? [];
     const files = await this.expenseAttachments.prepareFiles(
       attachmentIds,
@@ -157,7 +140,6 @@ export class ExpenseService {
         category: dto.category,
         amount: dto.amount,
         expenseDate: toExpenseDate(dto.expenseDate),
-        branchId,
         createdById: actor.id,
         updatedById: actor.id,
         ...(files.length > 0 && {
@@ -171,7 +153,7 @@ export class ExpenseService {
       },
       select: { id: true },
     });
-    const expense = await this.requireScopedExpense(created.id, actor);
+    const expense = await this.requireExpense(created.id);
     return toExpenseResponse(expense);
   }
 
@@ -181,17 +163,12 @@ export class ExpenseService {
     activeUser: ActiveUserDto,
   ) {
     const actor = await this.requireExpenseManager(activeUser.sub);
-    const current = await this.requireScopedExpense(id, actor);
+    const current = await this.requireExpense(id);
     if (current.status === ExpenseStatus.VOIDED) {
       throw new ConflictException('Voided expenses cannot be updated');
     }
 
-    const branchId = await this.resolveUpdateBranch(
-      actor,
-      current.branchId,
-      dto.branchId,
-    );
-    const { amount, expenseDate, branchId: _branchId, ...values } = dto;
+    const { amount, expenseDate, ...values } = dto;
 
     const expense = await this.prisma.$transaction(async (transaction) => {
       const updated = await transaction.expense.updateMany({
@@ -202,7 +179,6 @@ export class ExpenseService {
           ...(expenseDate !== undefined && {
             expenseDate: toExpenseDate(expenseDate),
           }),
-          branchId,
           updatedById: actor.id,
         },
       });
@@ -225,7 +201,7 @@ export class ExpenseService {
     activeUser: ActiveUserDto,
   ) {
     const actor = await this.requireExpenseManager(activeUser.sub);
-    const current = await this.requireScopedExpense(id, actor);
+    const current = await this.requireExpense(id);
     if (current.status === ExpenseStatus.VOIDED) {
       return toExpenseResponse(current);
     }
@@ -261,67 +237,13 @@ export class ExpenseService {
     return actor;
   }
 
-  private async requireScopedExpense(id: number, actor: User) {
-    const expense = await this.prisma.expense.findFirst({
-      where: {
-        id,
-        ...(!this.permission.isGlobalRole(actor.role) && {
-          branchId: actor.branchId ?? -1,
-        }),
-      },
+  private async requireExpense(id: number) {
+    const expense = await this.prisma.expense.findUnique({
+      where: { id },
       select: expenseSelect,
     });
     if (!expense) throw new NotFoundException('Expense not found');
     return expense;
   }
 
-  private async resolveCreateBranch(
-    actor: User,
-    requestedBranchId: number | null | undefined,
-  ) {
-    if (this.permission.isGlobalRole(actor.role)) {
-      if (requestedBranchId === null || requestedBranchId === undefined) {
-        return null;
-      }
-      await this.requireActiveBranch(requestedBranchId);
-      return requestedBranchId;
-    }
-
-    if (
-      !actor.branchId ||
-      requestedBranchId === null ||
-      (requestedBranchId !== undefined && requestedBranchId !== actor.branchId)
-    ) {
-      throw new ForbiddenException(
-        'You do not have permission to manage this branch',
-      );
-    }
-    await this.requireActiveBranch(actor.branchId);
-    return actor.branchId;
-  }
-
-  private async resolveUpdateBranch(
-    actor: User,
-    currentBranchId: number | null,
-    requestedBranchId: number | null | undefined,
-  ) {
-    if (requestedBranchId === undefined || requestedBranchId === currentBranchId) {
-      return currentBranchId;
-    }
-    if (!this.permission.isGlobalRole(actor.role)) {
-      throw new ForbiddenException('Branch managers cannot reassign expenses');
-    }
-    if (requestedBranchId === null) return null;
-    await this.requireActiveBranch(requestedBranchId);
-    return requestedBranchId;
-  }
-
-  private async requireActiveBranch(id: number) {
-    const branch = await this.prisma.branch.findUnique({
-      where: { id },
-      select: { isActive: true },
-    });
-    if (!branch) throw new NotFoundException('Branch not found');
-    if (!branch.isActive) throw new ForbiddenException('Branch is inactive');
-  }
 }

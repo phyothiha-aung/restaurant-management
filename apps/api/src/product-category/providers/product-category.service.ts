@@ -138,7 +138,7 @@ export class ProductCategoryService {
 
   private async requireCategoryManager(userId: number) {
     const actor = await this.users.requireUser(userId);
-    if (!this.permission.isBranchManager(actor.role)) {
+    if (!this.permission.isManager(actor.role)) {
       throw new ForbiddenException(
         'You do not have permission to manage product categories',
       );

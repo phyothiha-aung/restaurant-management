@@ -32,7 +32,6 @@ export function UserDetails({ user }: UserDetailsProps) {
 
       <dl className="grid gap-4 sm:grid-cols-2">
         <Detail label="Role" value={formatRole(user.role)} />
-        <Detail label="Branch" value={user.branch?.name ?? "Restaurant-wide"} />
         <Detail
           label="Last login"
           value={user.lastLoginAt ? dateTimeFormatter.format(new Date(user.lastLoginAt)) : "Never"}

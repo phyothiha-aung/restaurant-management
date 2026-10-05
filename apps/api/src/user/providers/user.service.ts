@@ -13,14 +13,13 @@ import { UpdateUserDto } from '../dtos/update-user.dto.js';
 import { UpdateSelfDto } from '../dtos/update-self.dto.js';
 import { UserQueryDto } from '../dtos/user-query.dto.js';
 import { UserStatus } from '../../generated/prisma/enums.js';
-import type { Prisma, User } from '../../generated/prisma/client.js';
+import type { Prisma } from '../../generated/prisma/client.js';
 import type { Request } from 'express';
 import { ActiveUserDto } from '../../auth/dtos/active-user.dto.js';
 import { PermissionProvider } from './permission.provider.js';
 
 const publicUserSelect = {
   id: true,
-  branchId: true,
   name: true,
   email: true,
   role: true,
@@ -29,9 +28,6 @@ const publicUserSelect = {
   createdAt: true,
   updatedAt: true,
   verifiedAt: true,
-  branch: {
-    select: { id: true, branchCode: true, name: true, isActive: true },
-  },
 } satisfies Prisma.UserSelect;
 
 @Injectable()
@@ -59,7 +55,6 @@ export class UserService {
 
     if (query.role) filters.push({ role: query.role });
     if (query.status) filters.push({ status: query.status });
-    if (query.branchId) filters.push({ branchId: query.branchId });
     if (query.search) {
       filters.push({
         OR: [
@@ -69,9 +64,6 @@ export class UserService {
       });
     }
 
-    if (!this.permission.isGlobalRole(actor.role)) {
-      filters.push({ branchId: actor.branchId ?? -1 });
-    }
     const where: Prisma.UserWhereInput = { AND: filters };
 
     return this.pagination.paginateQuery(
@@ -89,14 +81,12 @@ export class UserService {
   async findOneByEmail(email: string) {
     return this.prisma.user.findUnique({
       where: { email },
-      include: { branch: true },
     });
   }
 
   async findOneById(id: number) {
     return this.prisma.user.findUnique({
       where: { id },
-      include: { branch: true },
     });
   }
 
@@ -126,8 +116,7 @@ export class UserService {
 
   async create(dto: CreateUserDto, activeUser: ActiveUserDto) {
     const actor = await this.requireUser(activeUser.sub);
-    this.permission.assertCanAssignRole(actor, dto.role, dto.branchId ?? null);
-    await this.validateRoleAndBranch(dto.role, dto.branchId ?? null);
+    this.permission.assertCanAssignRole(actor, dto.role);
 
     const passwordHash = await this.hashing.hashPassword(dto.password);
     try {
@@ -138,7 +127,6 @@ export class UserService {
           passwordHash,
           role: dto.role,
           status: dto.status,
-          branchId: dto.branchId ?? null,
         },
         select: publicUserSelect,
       });
@@ -155,18 +143,12 @@ export class UserService {
     this.permission.assertCanManageUser(actor, target);
 
     const role = dto.role ?? target.role;
-    const branchId = this.permission.isGlobalRole(role)
-      ? null
-      : dto.branchId === undefined
-        ? target.branchId
-        : dto.branchId;
-    this.permission.assertCanAssignRole(actor, role, branchId);
-    await this.validateRoleAndBranch(role, branchId);
+    this.permission.assertCanAssignRole(actor, role);
 
     const passwordHash = dto.password
       ? await this.hashing.hashPassword(dto.password)
       : undefined;
-    const { password: _password, branchId: _branchId, ...data } = dto;
+    const { password: _password, ...data } = dto;
 
     try {
       return await this.prisma.$transaction(async (transaction) => {
@@ -174,7 +156,6 @@ export class UserService {
           where: { id },
           data: {
             ...data,
-            branchId,
             ...(passwordHash && { passwordHash }),
           },
           select: publicUserSelect,
@@ -237,28 +218,7 @@ export class UserService {
     return this.prisma.user.update({
       where: { id },
       data: { lastLoginAt: new Date() },
-      include: { branch: true },
     });
-  }
-
-  private async validateRoleAndBranch(
-    role: User['role'],
-    branchId: number | null,
-  ) {
-    if (this.permission.isGlobalRole(role)) {
-      if (branchId !== null) {
-        throw new ForbiddenException(
-          'Restaurant-wide roles cannot have a branch',
-        );
-      }
-      return;
-    }
-    if (!branchId) throw new ForbiddenException('This role requires a branch');
-    const branch = await this.prisma.branch.findUnique({
-      where: { id: branchId },
-    });
-    if (!branch) throw new NotFoundException('Branch not found');
-    if (!branch.isActive) throw new ForbiddenException('Branch is inactive');
   }
 
   private handlePrismaError(error: unknown): never {

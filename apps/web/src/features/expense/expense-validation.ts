@@ -42,7 +42,6 @@ export const ExpenseFormSchema = z.object({
   expenseDate: z
     .string()
     .refine(isValidExpenseDate, "Enter a valid expense date"),
-  branchId: z.string(),
 });
 
 export const VoidExpenseSchema = z.object({
