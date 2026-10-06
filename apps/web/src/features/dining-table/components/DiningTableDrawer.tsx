@@ -120,7 +120,11 @@ export function DiningTableDrawer({
           <p className="mt-1 text-sm text-muted">
             {getApiErrorMessage(detail.error, "Please try again.")}
           </p>
-          <Button className="mt-4" variant="outline" onClick={() => void detail.refetch()}>
+          <Button
+            className="mt-4"
+            variant="outline"
+            onClick={() => void detail.refetch()}
+          >
             Retry
           </Button>
         </div>
@@ -135,7 +139,7 @@ export function DiningTableDrawer({
             error={form.formState.errors.name?.message}
             {...form.register("name")}
           />
-          <div className="grid gap-5 sm:grid-cols-2">
+          <div className="grid gap-5 sm:grid-cols-2 items-start">
             <InputField
               label="Seat capacity"
               hint="Optional, from 1 to 100."
@@ -201,7 +205,8 @@ function TableDetails({ table }: { table: DiningTable }) {
             className="mt-2 inline-flex items-center gap-2 font-extrabold text-brand-red"
             to={`/orders/${table.openOrder.id}`}
           >
-            Order {formatOrderNumber(table.openOrder.id)} <ExternalLink size={15} />
+            Order {formatOrderNumber(table.openOrder.id)}{" "}
+            <ExternalLink size={15} />
           </Link>
         </div>
       ) : (
@@ -213,7 +218,10 @@ function TableDetails({ table }: { table: DiningTable }) {
         <Detail label="Display order" value={String(table.sortOrder)} />
         <Detail
           label="Last updated"
-          value={new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(table.updatedAt))}
+          value={new Intl.DateTimeFormat(undefined, {
+            dateStyle: "medium",
+            timeStyle: "short",
+          }).format(new Date(table.updatedAt))}
         />
       </dl>
     </div>
@@ -223,7 +231,9 @@ function TableDetails({ table }: { table: DiningTable }) {
 function Detail({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs font-bold uppercase tracking-wide text-muted">{label}</dt>
+      <dt className="text-xs font-bold uppercase tracking-wide text-muted">
+        {label}
+      </dt>
       <dd className="mt-1 font-semibold text-ink">{value}</dd>
     </div>
   );

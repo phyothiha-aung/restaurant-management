@@ -29,9 +29,9 @@ export function OrderList({ orders, canOperate }: OrderListProps) {
               <th className="px-5 py-3.5">Order</th>
               <th className="px-4 py-3.5">Type / table</th>
               <th className="px-4 py-3.5">Created by</th>
-              <th className="px-4 py-3.5">Items</th>
-              <th className="px-4 py-3.5">Total</th>
-              <th className="px-4 py-3.5">Status</th>
+              <th className="px-4 py-3.5 text-center">Items</th>
+              <th className="px-4 py-3.5 text-right">Total</th>
+              <th className="px-4 py-3.5 text-center">Status</th>
               <th className="px-4 py-3.5">Created</th>
               <th className="px-5 py-3.5 text-right">Actions</th>
             </tr>
@@ -60,14 +60,17 @@ export function OrderList({ orders, canOperate }: OrderListProps) {
                 <td className="max-w-40 px-4 py-4 text-xs text-muted">
                   <span className="block truncate">{order.createdBy.name}</span>
                 </td>
-                <td className="px-4 py-4 text-sm font-semibold text-ink">
+                <td className="px-4 py-4 text-sm font-semibold text-ink text-center">
                   {order.itemCount}
                 </td>
-                <td className="whitespace-nowrap px-4 py-4 text-sm font-extrabold text-ink">
+                <td className="whitespace-nowrap px-4 py-4 text-sm font-extrabold text-ink text-right">
                   {formatMoney(order.totalAmount)}
                 </td>
-                <td className="px-4 py-4">
-                  <Badge tone={orderStatusTone(order.status)}>
+                <td className="px-4 py-4 items-center justify-center flex">
+                  <Badge
+                    tone={orderStatusTone(order.status)}
+                    className="mt-1.5"
+                  >
                     {formatOrderStatus(order.status)}
                   </Badge>
                 </td>
