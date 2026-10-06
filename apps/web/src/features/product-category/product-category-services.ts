@@ -1,6 +1,5 @@
 import type {
   ApiErrorResponse,
-  PaginatedResponse,
   ProductCategory,
 } from "@restaurant-management/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -27,7 +26,7 @@ export const productCategoryKeys = {
 };
 
 export const useProductCategories = (query: ProductCategoryListQuery = {}) =>
-  useQuery<PaginatedResponse<ProductCategory>, AxiosError<ApiErrorResponse>>({
+  useQuery<ProductCategory[], AxiosError<ApiErrorResponse>>({
     queryKey: productCategoryKeys.list(query),
     queryFn: () => getProductCategories(query),
   });

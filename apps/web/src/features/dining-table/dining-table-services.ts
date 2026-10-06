@@ -1,7 +1,6 @@
 import type {
   ApiErrorResponse,
   DiningTable,
-  PaginatedResponse,
 } from "@restaurant-management/shared";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
@@ -28,7 +27,7 @@ export const diningTableKeys = {
 };
 
 export const useDiningTables = (query: DiningTableListQuery = {}) =>
-  useQuery<PaginatedResponse<DiningTable>, AxiosError<ApiErrorResponse>>({
+  useQuery<DiningTable[], AxiosError<ApiErrorResponse>>({
     queryKey: diningTableKeys.list(query),
     queryFn: () => getDiningTables(query),
   });

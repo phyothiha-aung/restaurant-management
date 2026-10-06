@@ -23,4 +23,10 @@ describe('dining table DTOs', () => {
     expect(DiningTableQuerySchema.safeParse({ status: 'BUSY' }).success).toBe(false);
     expect(DiningTableQuerySchema.safeParse({ status: 'OCCUPIED' }).success).toBe(true);
   });
+
+  it('strips legacy pagination parameters from list queries', () => {
+    expect(
+      DiningTableQuerySchema.parse({ page: '2', limit: '50', search: 'Patio' }),
+    ).toEqual({ search: 'Patio' });
+  });
 });

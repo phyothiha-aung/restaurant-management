@@ -6,7 +6,6 @@ import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { PageHeader } from "../components/ui/PageHeader";
-import { Pagination } from "../components/ui/Pagination";
 import {
   ProductCategoryDrawer,
   type ProductCategoryDrawerMode,
@@ -18,8 +17,6 @@ import {
   useUpdateProductCategory,
 } from "../features/product-category/product-category-services";
 import { getApiErrorMessage } from "../lib/api-error";
-
-const PAGE_LIMIT = 10;
 
 interface DrawerState {
   mode: ProductCategoryDrawerMode;
@@ -54,14 +51,8 @@ function CategorySearch({
   );
 }
 
-const parsePage = (value: string | null) => {
-  const page = Number(value);
-  return Number.isInteger(page) && page > 0 ? page : 1;
-};
-
 export function ProductCategoriesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const page = parsePage(searchParams.get("page"));
   const search = searchParams.get("search")?.trim() ?? "";
   const activeParam = searchParams.get("isActive");
   const isActive = activeParam === "true" ? true : activeParam === "false" ? false : undefined;
@@ -70,12 +61,10 @@ export function ProductCategoriesPage() {
 
   const query = useMemo(
     () => ({
-      page,
-      limit: PAGE_LIMIT,
       ...(search && { search }),
       ...(isActive !== undefined && { isActive }),
     }),
-    [isActive, page, search],
+    [isActive, search],
   );
   const categoriesQuery = useProductCategories(query);
   const closeDrawer = () => setDrawer(null);
@@ -100,13 +89,12 @@ export function ProductCategoriesPage() {
   );
 
   useEffect(() => {
-    const totalPages = categoriesQuery.data?.meta.totalPages;
-    if (!totalPages || page <= totalPages) return;
+    if (!searchParams.has("page") && !searchParams.has("limit")) return;
     const next = new URLSearchParams(searchParams);
-    if (totalPages === 1) next.delete("page");
-    else next.set("page", totalPages.toString());
+    next.delete("page");
+    next.delete("limit");
     setSearchParams(next, { replace: true });
-  }, [categoriesQuery.data?.meta.totalPages, page, searchParams, setSearchParams]);
+  }, [searchParams, setSearchParams]);
 
   const updateStatus = (value: string) => {
     const next = new URLSearchParams(searchParams);
@@ -116,18 +104,11 @@ export function ProductCategoriesPage() {
     setSearchParams(next, { replace: true });
   };
 
-  const updatePage = (nextPage: number) => {
-    const next = new URLSearchParams(searchParams);
-    if (nextPage <= 1) next.delete("page");
-    else next.set("page", nextPage.toString());
-    setSearchParams(next);
-  };
-
   const openDrawer = (mode: ProductCategoryDrawerMode, categoryId: number | null = null) => {
     setDrawer({ mode, categoryId });
   };
 
-  const categories = categoriesQuery.data?.data ?? [];
+  const categories = categoriesQuery.data ?? [];
   const hasFilters = Boolean(search || activeParam);
   const pendingCategoryId =
     deactivateMutation.variables ?? reactivateMutation.variables?.id ?? null;
@@ -176,26 +157,16 @@ export function ProductCategoriesPage() {
             onClearFilters={() => setSearchParams({}, { replace: true })}
           />
         ) : (
-          <>
-            <ProductCategoryList
-              categories={categories}
-              pendingCategoryId={pendingCategoryId}
-              onView={(category) => openDrawer("view", category.id)}
-              onEdit={(category) => openDrawer("edit", category.id)}
-              onDeactivate={setDeactivateTarget}
-              onReactivate={(category) =>
-                reactivateMutation.mutate({ id: category.id, input: { isActive: true } })
-              }
-            />
-            <Pagination
-              currentPage={categoriesQuery.data.meta.currentPage}
-              totalPages={categoriesQuery.data.meta.totalPages}
-              totalItems={categoriesQuery.data.meta.totalItems}
-              itemName="category"
-              disabled={categoriesQuery.isFetching}
-              onPageChange={updatePage}
-            />
-          </>
+          <ProductCategoryList
+            categories={categories}
+            pendingCategoryId={pendingCategoryId}
+            onView={(category) => openDrawer("view", category.id)}
+            onEdit={(category) => openDrawer("edit", category.id)}
+            onDeactivate={setDeactivateTarget}
+            onReactivate={(category) =>
+              reactivateMutation.mutate({ id: category.id, input: { isActive: true } })
+            }
+          />
         )}
       </Card>
 

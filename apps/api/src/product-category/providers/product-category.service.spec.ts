@@ -17,19 +17,11 @@ const createService = (role = UserRole.MANAGER) => {
   const prisma: any = {
     productCategory: {
       findMany: vi.fn().mockResolvedValue([category]),
-      count: vi.fn().mockResolvedValue(1),
       findUnique: vi.fn().mockResolvedValue(category),
       findFirst: vi.fn().mockResolvedValue(null),
       create: vi.fn().mockResolvedValue(category),
       update: vi.fn().mockResolvedValue(category),
     },
-  };
-  const pagination: any = {
-    paginateRawQuery: vi.fn(async (_query, fetch, count) => ({
-      data: await fetch(0, 10),
-      meta: { totalItems: await count() },
-      links: {},
-    })),
   };
   const permission: any = {
     isUserManager: vi.fn().mockReturnValue(role === UserRole.MANAGER),
@@ -39,30 +31,29 @@ const createService = (role = UserRole.MANAGER) => {
     requireUser: vi.fn().mockResolvedValue({ id: 1, role }),
   };
   return {
-    service: new ProductCategoryService(prisma, pagination, permission, users),
+    service: new ProductCategoryService(prisma, permission, users),
     prisma,
   };
 };
 
-const request = {
-  headers: { host: 'localhost' },
-  protocol: 'http',
-  url: '/api/product-categories',
-} as any;
-
 describe('ProductCategoryService', () => {
-  it('applies the same search and status filter to list and count', async () => {
+  it('returns every matching category in display order without a count query', async () => {
     const { service, prisma } = createService();
-    await service.findAll(
-      { page: 1, limit: 10, search: 'drink', isActive: true },
-      { sub: 1 } as any,
-      request,
-    );
-    expect(prisma.productCategory.count.mock.calls[0][0].where).toEqual(
-      prisma.productCategory.findMany.mock.calls[0][0].where,
-    );
+    await expect(
+      service.findAll(
+        { search: 'drink', isActive: true },
+        { sub: 1 } as any,
+      ),
+    ).resolves.toEqual([category]);
     expect(prisma.productCategory.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
+        where: {
+          isActive: true,
+          OR: [
+            { name: { contains: 'drink', mode: 'insensitive' } },
+            { description: { contains: 'drink', mode: 'insensitive' } },
+          ],
+        },
         orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       }),
     );

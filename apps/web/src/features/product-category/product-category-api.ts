@@ -1,14 +1,11 @@
 import type {
   ApiSuccessResponse,
-  PaginatedResponse,
   ProductCategory,
 } from "@restaurant-management/shared";
 import type { AxiosInstance } from "axios";
 import apiClient from "../../lib/api-client";
 
 export interface ProductCategoryListQuery {
-  page?: number;
-  limit?: number;
   search?: string;
   isActive?: boolean;
 }
@@ -30,9 +27,10 @@ export const getProductCategories = async (
   query: ProductCategoryListQuery = {},
   client: AxiosInstance = apiClient,
 ) => {
-  const response = await client.get<
-    ApiSuccessResponse<PaginatedResponse<ProductCategory>>
-  >("/api/product-categories", { params: query });
+  const response = await client.get<ApiSuccessResponse<ProductCategory[]>>(
+    "/api/product-categories",
+    { params: query },
+  );
   return response.data.data;
 };
 

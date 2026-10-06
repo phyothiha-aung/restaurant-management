@@ -17,6 +17,7 @@ const record = {
 const createService = (role = UserRole.MANAGER) => {
   const prisma: any = {
     diningTable: {
+      findMany: vi.fn().mockResolvedValue([record]),
       findUnique: vi.fn().mockResolvedValue(record),
       findFirst: vi.fn().mockResolvedValue(null),
       create: vi.fn().mockResolvedValue(record),
@@ -26,12 +27,33 @@ const createService = (role = UserRole.MANAGER) => {
   const permission: any = { isManager: vi.fn().mockReturnValue(role === UserRole.MANAGER) };
   const users: any = { requireUser: vi.fn().mockResolvedValue({ id: 1, role }) };
   return {
-    service: new DiningTableService(prisma, {} as any, permission, users),
+    service: new DiningTableService(prisma, permission, users),
     prisma,
   };
 };
 
 describe('DiningTableService', () => {
+  it('returns every matching table in display order without a count query', async () => {
+    const { service, prisma } = createService(UserRole.CHEF);
+    await expect(
+      service.findAll(
+        { search: 'table', status: 'AVAILABLE' },
+        { sub: 1 } as any,
+      ),
+    ).resolves.toEqual([expect.objectContaining({ id: 1, status: 'AVAILABLE' })]);
+    expect(prisma.diningTable.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          AND: [
+            { name: { contains: 'table', mode: 'insensitive' } },
+            { isActive: true, orders: { none: { status: 'OPEN' } } },
+          ],
+        },
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+      }),
+    );
+  });
+
   it('allows all authenticated staff to view a table', async () => {
     const { service } = createService(UserRole.CHEF);
     await expect(service.findOne(1, { sub: 1 } as any)).resolves.toMatchObject({

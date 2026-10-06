@@ -5,9 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
-import type { Request } from 'express';
 import { ActiveUserDto } from '../../auth/dtos/active-user.dto.js';
-import { PaginationProvider } from '../../common/pagination/providers/pagination.provider.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { PermissionProvider } from '../../user/providers/permission.provider.js';
@@ -26,15 +24,10 @@ const publicCategorySelect = {
   updatedAt: true,
 } satisfies Prisma.ProductCategorySelect;
 
-type PublicCategory = Prisma.ProductCategoryGetPayload<{
-  select: typeof publicCategorySelect;
-}>;
-
 @Injectable()
 export class ProductCategoryService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly pagination: PaginationProvider,
     private readonly permission: PermissionProvider,
     private readonly users: UserService,
   ) {}
@@ -42,7 +35,6 @@ export class ProductCategoryService {
   async findAll(
     query: ProductCategoryQueryDto,
     activeUser: ActiveUserDto,
-    request: Request,
   ) {
     await this.requireCategoryReader(activeUser.sub);
     const where: Prisma.ProductCategoryWhereInput = {
@@ -55,19 +47,11 @@ export class ProductCategoryService {
       }),
     };
 
-    return this.pagination.paginateRawQuery<PublicCategory>(
-      query,
-      (skip, take) =>
-        this.prisma.productCategory.findMany({
-          where,
-          select: publicCategorySelect,
-          orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-          skip,
-          take,
-        }),
-      () => this.prisma.productCategory.count({ where }),
-      request,
-    );
+    return this.prisma.productCategory.findMany({
+      where,
+      select: publicCategorySelect,
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+    });
   }
 
   async findOne(id: number, activeUser: ActiveUserDto) {

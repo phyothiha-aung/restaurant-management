@@ -1,5 +1,4 @@
 import { createZodDto } from 'nestjs-zod';
-import { PaginationQuerySchema } from '../../common/pagination/dtos/pagination-query-dto.js';
 import { z } from '../../common/lib/zod.js';
 
 export const DiningTableStatusSchema = z.enum([
@@ -8,7 +7,8 @@ export const DiningTableStatusSchema = z.enum([
   'INACTIVE',
 ]);
 
-export const DiningTableQuerySchema = PaginationQuerySchema.extend({
+export const DiningTableQuerySchema = z.object({
+  search: z.string().optional(),
   status: DiningTableStatusSchema.optional(),
 });
 

@@ -193,7 +193,7 @@ export class OrderService {
 
   async create(dto: CreateOrderDto, activeUser: ActiveUserDto) {
     const actor = await this.requireOperator(activeUser.sub);
-    return this.runSerializable(async (tx) => {
+    const orderId = await this.runSerializable(async (tx) => {
       const assignment = await this.resolveCreateAssignment(tx, dto);
       const items = [];
       for (const item of dto.items) {
@@ -212,16 +212,17 @@ export class OrderService {
           ...totals,
           items: { create: items.map((item) => item.data) },
         },
-        select: orderDetailSelect,
+        select: { id: true },
       });
-      return toOrderDetail(created);
+      return created.id;
     });
+    return toOrderDetail(await this.requireOrder(orderId));
   }
 
   async update(id: number, dto: UpdateOrderDto, activeUser: ActiveUserDto) {
     const actor = await this.requireOperator(activeUser.sub);
     await this.requireOrder(id);
-    return this.runSerializable(async (tx) => {
+    const orderId = await this.runSerializable(async (tx) => {
       const current = await tx.order.findUnique({
         where: { id },
         select: orderDetailSelect,
@@ -260,10 +261,11 @@ export class OrderService {
       const updated = await tx.order.update({
         where: { id },
         data: { ...totals, ...assignment, updatedById: actor.id },
-        select: orderDetailSelect,
+        select: { id: true },
       });
-      return toOrderDetail(updated);
+      return updated.id;
     });
+    return toOrderDetail(await this.requireOrder(orderId));
   }
 
   async complete(id: number, activeUser: ActiveUserDto) {
@@ -287,7 +289,7 @@ export class OrderService {
         `A ${scoped.status.toLowerCase()} order cannot be changed`,
       );
     }
-    return this.runSerializable(async (tx) => {
+    const orderId = await this.runSerializable(async (tx) => {
       const changed = await tx.order.updateMany({
         where: { id, status: OrderStatus.OPEN },
         data: {
@@ -300,14 +302,15 @@ export class OrderService {
       });
       const order = await tx.order.findUnique({
         where: { id },
-        select: orderDetailSelect,
+        select: { id: true, status: true },
       });
       if (!order) throw new NotFoundException('Order not found');
       if (changed.count !== 1 && order.status !== target) {
         throw new ConflictException('Order status changed concurrently');
       }
-      return toOrderDetail(order);
+      return order.id;
     });
+    return toOrderDetail(await this.requireOrder(orderId));
   }
 
   private async replaceItems(

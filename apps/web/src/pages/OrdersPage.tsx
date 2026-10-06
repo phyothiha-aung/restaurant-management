@@ -61,7 +61,7 @@ export function OrdersPage() {
     [dateFrom, dateTo, orderType, page, status, tableId],
   );
   const ordersQuery = useOrders(query);
-  const tablesQuery = useDiningTables({ page: 1, limit: 100 });
+  const tablesQuery = useDiningTables();
 
   useEffect(() => {
     const totalPages = ordersQuery.data?.meta.totalPages;
@@ -144,7 +144,7 @@ export function OrdersPage() {
           onChange={(value) => setFilter("tableId", value)}
         >
           <option value="all">All tables</option>
-          {(tablesQuery.data?.data ?? []).map((table) => (
+          {(tablesQuery.data ?? []).map((table) => (
             <option value={table.id} key={table.id}>{table.name}</option>
           ))}
         </FilterSelect>

@@ -8,9 +8,7 @@ import {
   Patch,
   Post,
   Query,
-  Req,
 } from '@nestjs/common';
-import type { Request } from 'express';
 import { ActiveUser } from '../auth/decorators/active-user.decorator.js';
 import { Roles } from '../auth/decorators/role.decorator.js';
 import { ActiveUserDto } from '../auth/dtos/active-user.dto.js';
@@ -43,9 +41,8 @@ export class ProductCategoryController {
   findAll(
     @Query() query: ProductCategoryQueryDto,
     @ActiveUser() user: ActiveUserDto,
-    @Req() request: Request,
   ) {
-    return this.categories.findAll(query, user, request);
+    return this.categories.findAll(query, user);
   }
 
   @Post()

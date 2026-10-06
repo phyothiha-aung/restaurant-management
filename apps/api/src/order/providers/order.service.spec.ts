@@ -147,6 +147,91 @@ describe('OrderService calculations and permissions', () => {
     });
   });
 
+  it('loads order details after the create transaction commits', async () => {
+    const { service, prisma } = createService();
+    const now = new Date();
+    const order = {
+      id: 42,
+      tableId: null,
+      createdById: 1,
+      updatedById: 1,
+      orderType: OrderType.TAKEAWAY,
+      tableName: null,
+      status: 'OPEN',
+      subtotal: new Prisma.Decimal('1000'),
+      discountType: null,
+      discountValue: new Prisma.Decimal('0'),
+      discountAmount: new Prisma.Decimal('0'),
+      taxPercent: new Prisma.Decimal('0'),
+      taxAmount: new Prisma.Decimal('0'),
+      totalAmount: new Prisma.Decimal('1000'),
+      completedAt: null,
+      cancelledAt: null,
+      createdAt: now,
+      updatedAt: now,
+      table: null,
+      createdBy: { id: 1, name: 'Manager' },
+      updatedBy: { id: 1, name: 'Manager' },
+      _count: { items: 1 },
+      items: [
+        {
+          id: 7,
+          orderId: 42,
+          productVariantId: 3,
+          productName: 'Tea',
+          variantName: 'Regular',
+          unitPrice: new Prisma.Decimal('1000'),
+          quantity: 1,
+          baseSubtotal: new Prisma.Decimal('1000'),
+          addonTotal: new Prisma.Decimal('0'),
+          lineTotal: new Prisma.Decimal('1000'),
+          productVariant: { productId: 2 },
+          addons: [],
+        },
+      ],
+    };
+    const tx: any = {
+      productVariant: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 3,
+          name: 'Regular',
+          price: new Prisma.Decimal('1000'),
+          isActive: true,
+          product: {
+            id: 2,
+            name: 'Tea',
+            isActive: true,
+            category: { isActive: true },
+          },
+        }),
+      },
+      order: { create: vi.fn().mockResolvedValue({ id: 42 }) },
+    };
+    prisma.$transaction = vi.fn((callback) => callback(tx));
+    prisma.order.findUnique = vi.fn().mockResolvedValue(order);
+
+    await expect(
+      service.create(
+        {
+          orderType: OrderType.TAKEAWAY,
+          items: [{ productVariantId: 3, quantity: 1, addons: [] }],
+          taxPercent: '0',
+        },
+        { sub: 1 } as any,
+      ),
+    ).resolves.toMatchObject({ id: 42, totalAmount: '1000.00' });
+
+    expect(tx.order.create).toHaveBeenCalledWith(
+      expect.objectContaining({ select: { id: true } }),
+    );
+    expect(prisma.order.findUnique).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 42 } }),
+    );
+    expect(tx.order.create.mock.invocationCallOrder[0]).toBeLessThan(
+      prisma.order.findUnique.mock.invocationCallOrder[0],
+    );
+  });
+
   it('rejects an occupied table', async () => {
     const { service } = createService();
     const tx: any = {

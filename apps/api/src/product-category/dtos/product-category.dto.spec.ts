@@ -34,4 +34,10 @@ describe('product category DTO schemas', () => {
     expect(ProductCategoryQuerySchema.parse({ isActive: 'false' }).isActive).toBe(false);
     expect(ProductCategoryQuerySchema.safeParse({ isActive: '1' }).success).toBe(false);
   });
+
+  it('strips legacy pagination parameters from list queries', () => {
+    expect(
+      ProductCategoryQuerySchema.parse({ page: '2', limit: '50', search: 'Rice' }),
+    ).toEqual({ search: 'Rice' });
+  });
 });

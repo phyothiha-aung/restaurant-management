@@ -8,9 +8,7 @@ import {
   Patch,
   Post,
   Query,
-  Req,
 } from '@nestjs/common';
-import type { Request } from 'express';
 import { ActiveUser } from '../auth/decorators/active-user.decorator.js';
 import { Roles } from '../auth/decorators/role.decorator.js';
 import { ActiveUserDto } from '../auth/dtos/active-user.dto.js';
@@ -37,9 +35,8 @@ export class DiningTableController {
   findAll(
     @Query() query: DiningTableQueryDto,
     @ActiveUser() user: ActiveUserDto,
-    @Req() request: Request,
   ) {
-    return this.tables.findAll(query, user, request);
+    return this.tables.findAll(query, user);
   }
 
   @Post()

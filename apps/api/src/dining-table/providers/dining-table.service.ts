@@ -5,9 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
-import type { Request } from 'express';
 import { ActiveUserDto } from '../../auth/dtos/active-user.dto.js';
-import { PaginationProvider } from '../../common/pagination/providers/pagination.provider.js';
 import { OrderStatus } from '../../generated/prisma/enums.js';
 import type { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
@@ -62,7 +60,6 @@ const toResponse = (table: DiningTableRecord) => {
 export class DiningTableService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly pagination: PaginationProvider,
     private readonly permission: PermissionProvider,
     private readonly users: UserService,
   ) {}
@@ -70,7 +67,6 @@ export class DiningTableService {
   async findAll(
     query: DiningTableQueryDto,
     activeUser: ActiveUserDto,
-    request: Request,
   ) {
     await this.users.requireUser(activeUser.sub);
     const filters: Prisma.DiningTableWhereInput[] = [];
@@ -91,20 +87,12 @@ export class DiningTableService {
       filters.push({ isActive: false });
     }
     const where: Prisma.DiningTableWhereInput = { AND: filters };
-    const result = await this.pagination.paginateRawQuery<DiningTableRecord>(
-      query,
-      (skip, take) =>
-        this.prisma.diningTable.findMany({
-          where,
-          select: diningTableSelect,
-          orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-          skip,
-          take,
-        }),
-      () => this.prisma.diningTable.count({ where }),
-      request,
-    );
-    return { ...result, data: result.data.map(toResponse) };
+    const tables = await this.prisma.diningTable.findMany({
+      where,
+      select: diningTableSelect,
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+    });
+    return tables.map(toResponse);
   }
 
   async findOne(id: number, activeUser: ActiveUserDto) {

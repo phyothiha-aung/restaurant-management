@@ -2,13 +2,10 @@ import type {
   ApiSuccessResponse,
   DiningTable,
   DiningTableStatus,
-  PaginatedResponse,
 } from "@restaurant-management/shared";
 import apiClient from "../../lib/api-client";
 
 export interface DiningTableListQuery {
-  page?: number;
-  limit?: number;
   search?: string;
   status?: DiningTableStatus;
 }
@@ -27,7 +24,7 @@ const unwrap = <T>(response: { data: ApiSuccessResponse<T> }) =>
 
 export const getDiningTables = async (query: DiningTableListQuery = {}) =>
   unwrap(
-    await apiClient.get<ApiSuccessResponse<PaginatedResponse<DiningTable>>>(
+    await apiClient.get<ApiSuccessResponse<DiningTable[]>>(
       "/api/tables",
       { params: query },
     ),
