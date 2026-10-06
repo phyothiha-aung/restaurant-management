@@ -45,6 +45,65 @@ export interface ApiErrorResponse {
   statusCode: number;
 }
 
+export interface FinancialReportPeriod {
+  dateFrom: string;
+  dateTo: string;
+  timeZone: string;
+}
+
+export interface FinancialReportSummary {
+  grossSales: string;
+  discounts: string;
+  netSales: string;
+  collectedTax: string;
+  collectedTotal: string;
+  expenses: string;
+  profit: string;
+  profitMargin: string | null;
+  averageOrderValue: string;
+  completedOrderCount: number;
+}
+
+export interface FinancialReportDailyPoint {
+  date: string;
+  grossSales: string;
+  discounts: string;
+  netSales: string;
+  collectedTax: string;
+  collectedTotal: string;
+  expenses: string;
+  profit: string;
+  completedOrderCount: number;
+}
+
+export interface FinancialReportExpenseCategory {
+  category: ExpenseCategory;
+  amount: string;
+}
+
+export interface FinancialReportOrderType {
+  orderType: OrderType;
+  completedOrderCount: number;
+  grossSales: string;
+  netSales: string;
+}
+
+export interface FinancialReportTopProduct {
+  productId: number;
+  name: string;
+  quantity: number;
+  grossSales: string;
+}
+
+export interface FinancialReport {
+  period: FinancialReportPeriod;
+  summary: FinancialReportSummary;
+  daily: FinancialReportDailyPoint[];
+  expensesByCategory: FinancialReportExpenseCategory[];
+  salesByOrderType: FinancialReportOrderType[];
+  topProducts: FinancialReportTopProduct[];
+}
+
 export interface PaginationMeta {
   itemsPerPage: number;
   totalItems: number;

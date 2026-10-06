@@ -340,6 +340,7 @@ model Order {
   items     OrderItem[]
 
   @@index([status, createdAt])
+  @@index([status, completedAt])
   @@index([orderType, createdAt])
   @@index([tableId, createdAt])
   @@index([createdById, createdAt])

@@ -8,6 +8,7 @@ import {
   UtensilsCrossed,
   ShoppingCart,
   Armchair,
+  ChartNoAxesCombined,
 } from "lucide-react";
 import { NavLink } from "react-router";
 import { logout } from "../../features/auth/auth-services";
@@ -60,6 +61,12 @@ export function Sidebar({ onNavigate, onClose }: SidebarProps) {
       label: "Expenses",
       icon: ReceiptText,
       visible: canManageExpenses(user.role),
+    },
+    {
+      to: "/reports",
+      label: "Reports",
+      icon: ChartNoAxesCombined,
+      visible: canManageUsers(user.role),
     },
     {
       to: "/catalog",

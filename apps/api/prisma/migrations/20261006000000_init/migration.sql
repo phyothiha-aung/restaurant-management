@@ -265,6 +265,7 @@ CREATE UNIQUE INDEX "product_images_fileId_key" ON "product_images"("fileId");
 CREATE INDEX "product_images_attachedById_idx" ON "product_images"("attachedById");
 CREATE INDEX "restaurant_tables_isActive_sortOrder_name_idx" ON "restaurant_tables"("isActive", "sortOrder", "name");
 CREATE INDEX "orders_status_createdAt_idx" ON "orders"("status", "createdAt");
+CREATE INDEX "orders_status_completedAt_idx" ON "orders"("status", "completedAt");
 CREATE INDEX "orders_orderType_createdAt_idx" ON "orders"("orderType", "createdAt");
 CREATE INDEX "orders_tableId_createdAt_idx" ON "orders"("tableId", "createdAt");
 CREATE INDEX "orders_createdById_createdAt_idx" ON "orders"("createdById", "createdAt");

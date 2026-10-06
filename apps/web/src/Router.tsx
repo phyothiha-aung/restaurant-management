@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes, Outlet, useLocation } from "react-router";
+import { lazy, Suspense } from "react";
 import { AppShell } from "./components/layout/AppShell";
 import { LoginPage } from "./pages/LoginPage";
 import { OverviewPage } from "./pages/OverviewPage";
@@ -18,6 +19,10 @@ import {
   canOperateOrders,
 } from "./lib/user-display";
 
+const ReportsPage = lazy(() =>
+  import("./pages/ReportsPage").then((module) => ({ default: module.ReportsPage })),
+);
+
 export function AppRoutes() {
   return (
     <Routes>
@@ -31,6 +36,14 @@ export function AppRoutes() {
             <Route path="users" element={<UsersPage />} />
             <Route path="expenses" element={<ExpensesPage />} />
             <Route path="catalog" element={<CatalogPage />} />
+            <Route
+              path="reports"
+              element={
+                <Suspense fallback={<div className="h-96 animate-pulse rounded-2xl bg-line-soft" />}>
+                  <ReportsPage />
+                </Suspense>
+              }
+            />
           </Route>
           <Route element={<GlobalManagerOnlyRoute />}>
             <Route path="product-categories" element={<ProductCategoriesPage />} />

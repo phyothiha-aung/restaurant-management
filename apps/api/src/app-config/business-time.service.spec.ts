@@ -28,4 +28,17 @@ describe('BusinessTimeService', () => {
       '2026-03-09T04:00:00.000Z',
     );
   });
+
+  it('returns restaurant-local dates and inclusive calendar sequences', () => {
+    const service = serviceFor('Asia/Yangon');
+    expect(
+      service.currentBusinessDate(new Date('2026-10-05T18:00:00.000Z')),
+    ).toBe('2026-10-06');
+    expect(service.firstDateOfMonth('2026-10-06')).toBe('2026-10-01');
+    expect(service.businessDates('2024-02-28', '2024-03-01')).toEqual([
+      '2024-02-28',
+      '2024-02-29',
+      '2024-03-01',
+    ]);
+  });
 });
