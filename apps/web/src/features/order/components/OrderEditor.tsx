@@ -11,6 +11,7 @@ import { useCreateOrder, useOrderMenu, useUpdateOrder } from "../order-services"
 import {
   calculateOrderTotals,
   formatMoney,
+  formatOrderNumber,
   isValidDecimal,
   isValidPercent,
   minorToMoney,
@@ -146,7 +147,7 @@ export function OrderEditor({ order }: OrderEditorProps) {
     <div className="space-y-6">
       <div>
         <Link className="inline-flex items-center gap-2 text-sm font-bold text-muted hover:text-ink" to={order ? `/orders/${order.id}` : "/orders"}><ArrowLeft size={16} /> {order ? "Back to order" : "Back to orders"}</Link>
-        <div className="mt-4"><p className="text-xs font-extrabold uppercase tracking-[0.14em] text-brand-red">Point of sale</p><h1 className="mt-2 font-heading text-3xl font-bold">{order ? `Edit order #${order.id}` : "New order"}</h1><p className="mt-2 text-sm text-muted">Choose menu items, configure options, and save an open order.</p></div>
+        <div className="mt-4"><p className="text-xs font-extrabold uppercase tracking-[0.14em] text-brand-red">Point of sale</p><h1 className="mt-2 font-heading text-3xl font-bold">{order ? `Edit order ${formatOrderNumber(order.id)}` : "New order"}</h1><p className="mt-2 text-sm text-muted">Choose menu items, configure options, and save an open order.</p></div>
       </div>
 
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_24rem]">

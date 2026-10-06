@@ -21,6 +21,7 @@ import {
 } from "../features/order/order-services";
 import {
   formatMoney,
+  formatOrderNumber,
   formatOrderStatus,
   orderStatusTone,
 } from "../features/order/order-utils";
@@ -78,7 +79,9 @@ export function OrderDetailPage() {
               Order detail
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-3">
-              <h1 className="font-heading text-3xl font-bold">Order #{order.id}</h1>
+              <h1 className="font-heading text-3xl font-bold">
+                Order {formatOrderNumber(order.id)}
+              </h1>
               <Badge tone={orderStatusTone(order.status)}>
                 {formatOrderStatus(order.status)}
               </Badge>

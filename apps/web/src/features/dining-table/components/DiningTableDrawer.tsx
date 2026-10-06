@@ -9,6 +9,7 @@ import { Button } from "../../../components/ui/Button";
 import { Drawer } from "../../../components/ui/Drawer";
 import { InputField } from "../../../components/ui/FormField";
 import { getApiErrorMessage } from "../../../lib/api-error";
+import { formatOrderNumber } from "../../order/order-utils";
 import {
   useCreateDiningTable,
   useDiningTable,
@@ -200,7 +201,7 @@ function TableDetails({ table }: { table: DiningTable }) {
             className="mt-2 inline-flex items-center gap-2 font-extrabold text-brand-red"
             to={`/orders/${table.openOrder.id}`}
           >
-            Order #{table.openOrder.id} <ExternalLink size={15} />
+            Order {formatOrderNumber(table.openOrder.id)} <ExternalLink size={15} />
           </Link>
         </div>
       ) : (

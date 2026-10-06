@@ -12,6 +12,9 @@ export const isOrderStatus = (value: string | null): value is OrderStatus =>
 export const formatOrderStatus = (status: OrderStatus) =>
   status.charAt(0) + status.slice(1).toLowerCase();
 
+export const formatOrderNumber = (id: number) =>
+  `#${id.toString().padStart(5, "0")}`;
+
 export const orderStatusTone = (status: OrderStatus) => {
   if (status === "COMPLETED") return "success" as const;
   if (status === "CANCELLED") return "red" as const;

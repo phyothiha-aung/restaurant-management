@@ -4,6 +4,7 @@ import { Link } from "react-router";
 import { Badge } from "../../../components/ui/Badge";
 import {
   formatMoney,
+  formatOrderNumber,
   formatOrderStatus,
   orderStatusTone,
 } from "../order-utils";
@@ -43,14 +44,18 @@ export function OrderList({ orders, canOperate }: OrderListProps) {
                     className="text-sm font-extrabold text-ink hover:text-brand-red"
                     to={`/orders/${order.id}`}
                   >
-                    Order #{order.id}
+                    {formatOrderNumber(order.id)}
                   </Link>
                 </td>
                 <td className="max-w-44 px-4 py-4 text-xs text-muted">
                   <span className="block truncate font-semibold text-ink">
-                    {order.orderType === "DINE_IN" ? order.tableName : "Takeaway"}
+                    {order.orderType === "DINE_IN"
+                      ? order.tableName
+                      : "Takeaway"}
                   </span>
-                  <span>{order.orderType === "DINE_IN" ? "Dine in" : "No table"}</span>
+                  <span>
+                    {order.orderType === "DINE_IN" ? "Dine in" : "No table"}
+                  </span>
                 </td>
                 <td className="max-w-40 px-4 py-4 text-xs text-muted">
                   <span className="block truncate">{order.createdBy.name}</span>
@@ -74,7 +79,7 @@ export function OrderList({ orders, canOperate }: OrderListProps) {
                     <Link
                       className="grid h-9 w-9 place-items-center rounded-lg text-muted transition hover:bg-line-soft hover:text-ink"
                       to={`/orders/${order.id}`}
-                      aria-label={`View order ${order.id}`}
+                      aria-label={`View order ${formatOrderNumber(order.id)}`}
                     >
                       <Eye size={16} />
                     </Link>
@@ -82,7 +87,7 @@ export function OrderList({ orders, canOperate }: OrderListProps) {
                       <Link
                         className="grid h-9 w-9 place-items-center rounded-lg text-muted transition hover:bg-line-soft hover:text-ink"
                         to={`/orders/${order.id}/edit`}
-                        aria-label={`Edit order ${order.id}`}
+                        aria-label={`Edit order ${formatOrderNumber(order.id)}`}
                       >
                         <Pencil size={16} />
                       </Link>
@@ -107,7 +112,7 @@ export function OrderList({ orders, canOperate }: OrderListProps) {
                   className="font-extrabold text-ink hover:text-brand-red"
                   to={`/orders/${order.id}`}
                 >
-                  Order #{order.id}
+                  Order {formatOrderNumber(order.id)}
                 </Link>
                 <p className="mt-1 text-lg font-extrabold text-brand-red">
                   {formatMoney(order.totalAmount)}
@@ -119,7 +124,8 @@ export function OrderList({ orders, canOperate }: OrderListProps) {
             </div>
             <div className="mt-4 grid gap-2 text-xs text-muted">
               <p className="flex items-center gap-2 font-semibold text-ink">
-                <Armchair size={14} /> {order.orderType === "DINE_IN" ? order.tableName : "Takeaway"}
+                <Armchair size={14} />{" "}
+                {order.orderType === "DINE_IN" ? order.tableName : "Takeaway"}
               </p>
               <p className="flex items-center gap-2">
                 <ShoppingBag size={14} /> {order.itemCount} item
