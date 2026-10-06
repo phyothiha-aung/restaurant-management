@@ -5,6 +5,15 @@ const optionalCredential = z.preprocess(
   z.string().min(1).optional(),
 );
 
+export const isSupportedTimeZone = (value: string) => {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: value }).format();
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 export default z.object({
   NODE_ENV: z
     .enum(['development', 'production', 'test', 'staging', 'uat'])
@@ -14,6 +23,10 @@ export default z.object({
   DATABASE_URL: z.string().min(1),
 
   FRONTEND_URL: z.url().default('http://localhost:3000'),
+  RESTAURANT_TIME_ZONE: z
+    .string()
+    .min(1)
+    .refine(isSupportedTimeZone, 'Must be a supported IANA timezone'),
 
   JWT_SECRET: z.string().min(1),
   JWT_TOKEN_AUDIENCE: z.string().min(1),

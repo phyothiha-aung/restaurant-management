@@ -3,6 +3,8 @@ import { Edit3, Eye, MoreHorizontal, Power, PowerOff, Tags } from "lucide-react"
 import type { ReactNode } from "react";
 import { Badge } from "../../../components/ui/Badge";
 import { Button } from "../../../components/ui/Button";
+import { useAppConfig } from "../../app-config/app-config-context";
+import { formatTimestamp } from "../../../lib/date-format";
 
 interface ProductCategoryListProps {
   categories: ProductCategory[];
@@ -13,8 +15,6 @@ interface ProductCategoryListProps {
   onReactivate: (category: ProductCategory) => void;
 }
 
-const dateFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: "medium" });
-
 export function ProductCategoryList({
   categories,
   pendingCategoryId,
@@ -23,6 +23,7 @@ export function ProductCategoryList({
   onDeactivate,
   onReactivate,
 }: ProductCategoryListProps) {
+  const { timeZone } = useAppConfig();
   return (
     <>
       <div className="hidden overflow-x-auto md:block">
@@ -60,7 +61,7 @@ export function ProductCategoryList({
                     </Badge>
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 text-xs text-muted">
-                    {dateFormatter.format(new Date(category.updatedAt))}
+                    {formatTimestamp(category.updatedAt, timeZone, { dateStyle: "medium" })}
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex justify-end gap-1">
@@ -106,7 +107,7 @@ export function ProductCategoryList({
                 <p className="flex items-center gap-2 font-semibold text-ink">
                   <Tags className="shrink-0 text-brand-red" size={14} /> Sort order {category.sortOrder}
                 </p>
-                <p>Updated {dateFormatter.format(new Date(category.updatedAt))}</p>
+                <p>Updated {formatTimestamp(category.updatedAt, timeZone, { dateStyle: "medium" })}</p>
               </div>
               <div className="mt-4 flex flex-wrap gap-2 border-t border-line pt-3">
                 <Button size="sm" variant="ghost" onClick={() => onView(category)}>

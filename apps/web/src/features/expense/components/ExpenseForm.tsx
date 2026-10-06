@@ -20,6 +20,8 @@ import {
   ExpenseFormSchema,
   type ExpenseFormValues,
 } from "../expense-validation";
+import { useAppConfig } from "../../app-config/app-config-context";
+import { getBusinessDate } from "../../../lib/date-format";
 
 interface ExpenseFormProps {
   expense?: Expense;
@@ -28,20 +30,12 @@ interface ExpenseFormProps {
   onSubmit: (input: CreateExpenseInput) => void;
 }
 
-const today = () => {
-  const date = new Date();
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
-
-const getDefaultValues = (expense?: Expense): ExpenseFormValues => ({
+const getDefaultValues = (timeZone: string, expense?: Expense): ExpenseFormValues => ({
   title: expense?.title ?? "",
   description: expense?.description ?? "",
   category: expense?.category ?? "",
   amount: expense?.amount ?? "",
-  expenseDate: expense?.expenseDate ?? today(),
+  expenseDate: expense?.expenseDate ?? getBusinessDate(timeZone),
 });
 
 export function ExpenseForm({
@@ -50,16 +44,17 @@ export function ExpenseForm({
   onCancel,
   onSubmit,
 }: ExpenseFormProps) {
+  const { timeZone } = useAppConfig();
   const [attachmentIds, setAttachmentIds] = useState<string[]>([]);
   const [attachmentsUploading, setAttachmentsUploading] = useState(false);
   const form = useForm<ExpenseFormValues>({
     resolver: zodResolver(ExpenseFormSchema),
-    defaultValues: getDefaultValues(expense),
+    defaultValues: getDefaultValues(timeZone, expense),
   });
 
   useEffect(() => {
-    form.reset(getDefaultValues(expense));
-  }, [expense, form]);
+    form.reset(getDefaultValues(timeZone, expense));
+  }, [expense, form, timeZone]);
 
   const submit = (values: ExpenseFormValues) => {
     if (!isExpenseCategory(values.category)) return;

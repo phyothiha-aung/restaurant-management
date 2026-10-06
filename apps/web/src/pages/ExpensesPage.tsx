@@ -25,6 +25,7 @@ import {
 import { isValidExpenseDate } from "../features/expense/expense-validation";
 import { getApiErrorMessage } from "../lib/api-error";
 import { useAuthStore } from "../store/useAuthStore";
+import { useAppConfig } from "../features/app-config/app-config-context";
 
 const PAGE_LIMIT = 10;
 
@@ -73,6 +74,7 @@ const parseDate = (value: string | null) =>
   value && isValidExpenseDate(value) ? value : undefined;
 
 export function ExpensesPage() {
+  const { timeZone } = useAppConfig();
   const actor = useAuthStore((state) => state.user);
   const [searchParams, setSearchParams] = useSearchParams();
   const page = parsePage(searchParams.get("page"));
@@ -240,6 +242,9 @@ export function ExpensesPage() {
           min={dateFrom}
           onChange={(value) => updateFilter("dateTo", value)}
         />
+        <p className="text-xs text-muted sm:col-span-2 xl:col-span-5">
+          Expense dates are restaurant calendar dates ({timeZone}).
+        </p>
       </Card>
 
       <Card className="overflow-hidden">

@@ -79,8 +79,8 @@ model RefreshToken {
   userId    Int
   jti       String   @unique
   tokenHash String
-  createdAt DateTime @default(now())
-  expiredAt DateTime
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  expiredAt DateTime @db.Timestamptz(3)
 
   user User? @relation(fields: [userId], references: [id])
 
@@ -100,10 +100,10 @@ model User {
   username String? @unique
   pinHash  String?
 
-  lastLoginAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  verifiedAt  DateTime?
+  lastLoginAt DateTime? @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(3)
+  verifiedAt  DateTime? @db.Timestamptz(3)
 
   refreshTokens   RefreshToken[]
   createdExpenses Expense[]           @relation("ExpenseCreatedBy")
@@ -134,9 +134,9 @@ model Expense {
   status      ExpenseStatus   @default(ACTIVE)
 
   voidReason String?   @db.VarChar(300)
-  voidedAt   DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
+  voidedAt   DateTime? @db.Timestamptz(3)
+  createdAt  DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime  @updatedAt @db.Timestamptz(3)
 
   createdBy   User                @relation("ExpenseCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
   updatedBy   User                @relation("ExpenseUpdatedBy", fields: [updatedById], references: [id], onDelete: Restrict)
@@ -159,10 +159,10 @@ model StoredFile {
   mimeType     String            @db.VarChar(100)
   sizeBytes    Int
   status       StoredFileStatus  @default(PENDING)
-  expiresAt    DateTime
-  readyAt      DateTime?
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
+  expiresAt    DateTime          @db.Timestamptz(3)
+  readyAt      DateTime?         @db.Timestamptz(3)
+  createdAt    DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime          @updatedAt @db.Timestamptz(3)
 
   uploadedBy        User               @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
   expenseAttachment ExpenseAttachment?
@@ -179,7 +179,7 @@ model ExpenseAttachment {
   expenseId    Int
   fileId       String   @unique
   attachedById Int
-  createdAt    DateTime @default(now())
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
 
   expense    Expense    @relation(fields: [expenseId], references: [id], onDelete: Restrict)
   file       StoredFile @relation(fields: [fileId], references: [id], onDelete: Restrict)
@@ -197,8 +197,8 @@ model ProductCategory {
   description String?  @db.VarChar(300)
   sortOrder   Int      @default(0)
   isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
 
   products Product[]
 
@@ -216,8 +216,8 @@ model Product {
   description String?  @db.VarChar(1000)
   sortOrder   Int      @default(0)
   isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
 
   category         ProductCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   variants         ProductVariant[]
@@ -237,8 +237,8 @@ model ProductVariant {
   price     Decimal  @db.Decimal(14, 2)
   sortOrder Int      @default(0)
   isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
   product    Product     @relation(fields: [productId], references: [id], onDelete: Restrict)
   orderItems OrderItem[]
@@ -253,8 +253,8 @@ model Addon {
   name      String   @db.VarChar(100)
   unitPrice Decimal  @db.Decimal(14, 2)
   isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
   productAssignments ProductAddon[]
   orderItemAddons    OrderItemAddon[]
@@ -285,7 +285,7 @@ model ProductImage {
   productId    Int      @unique
   fileId       String   @unique
   attachedById Int
-  createdAt    DateTime @default(now())
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
 
   product    Product    @relation(fields: [productId], references: [id], onDelete: Restrict)
   file       StoredFile @relation(fields: [fileId], references: [id], onDelete: Restrict)
@@ -302,8 +302,8 @@ model DiningTable {
   capacity  Int?
   sortOrder Int      @default(0)
   isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
 
   orders Order[]
 
@@ -329,10 +329,10 @@ model Order {
   taxAmount      Decimal       @default(0) @db.Decimal(14, 2)
   totalAmount    Decimal       @default(0) @db.Decimal(14, 2)
 
-  completedAt DateTime?
-  cancelledAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  completedAt DateTime? @db.Timestamptz(3)
+  cancelledAt DateTime? @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime  @updatedAt @db.Timestamptz(3)
 
   table     DiningTable? @relation(fields: [tableId], references: [id], onDelete: Restrict)
   createdBy User         @relation("OrderCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)

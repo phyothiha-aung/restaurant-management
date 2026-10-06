@@ -10,12 +10,8 @@ import {
   formatExpenseAmount,
   formatExpenseCategory,
 } from "../expense-options";
-
-const dateFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: "medium" });
-const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
-  dateStyle: "medium",
-  timeStyle: "short",
-});
+import { useAppConfig } from "../../app-config/app-config-context";
+import { formatDateOnly, formatTimestamp } from "../../../lib/date-format";
 
 const statusTone: Record<ExpenseStatus, "success" | "neutral"> = {
   ACTIVE: "success",
@@ -23,6 +19,7 @@ const statusTone: Record<ExpenseStatus, "success" | "neutral"> = {
 };
 
 export function ExpenseDetails({ expense }: { expense: Expense }) {
+  const { timeZone } = useAppConfig();
   const [openingAttachmentId, setOpeningAttachmentId] = useState<number | null>(null);
 
   const openAttachment = async (attachmentId: number) => {
@@ -62,11 +59,11 @@ export function ExpenseDetails({ expense }: { expense: Expense }) {
 
       <dl className="grid gap-4 sm:grid-cols-2">
         <Detail label="Category" value={formatExpenseCategory(expense.category)} />
-        <Detail label="Expense date" value={dateFormatter.format(new Date(`${expense.expenseDate}T00:00:00`))} />
+        <Detail label="Expense date" value={formatDateOnly(expense.expenseDate)} />
         <Detail label="Created by" value={expense.createdBy.name} />
-        <Detail label="Created" value={dateTimeFormatter.format(new Date(expense.createdAt))} />
+        <Detail label="Created" value={formatTimestamp(expense.createdAt, timeZone)} />
         <Detail label="Last updated by" value={expense.updatedBy.name} />
-        <Detail label="Last updated" value={dateTimeFormatter.format(new Date(expense.updatedAt))} />
+        <Detail label="Last updated" value={formatTimestamp(expense.updatedAt, timeZone)} />
       </dl>
 
       <section>
@@ -123,7 +120,7 @@ export function ExpenseDetails({ expense }: { expense: Expense }) {
           <p className="mt-3 text-xs text-muted">
             Voided by {expense.voidedBy?.name ?? "Unknown"}
             {expense.voidedAt
-              ? ` on ${dateTimeFormatter.format(new Date(expense.voidedAt))}`
+              ? ` on ${formatTimestamp(expense.voidedAt, timeZone)}`
               : ""}
           </p>
         </div>

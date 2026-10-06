@@ -8,6 +8,7 @@ const baseEnvironment = {
   JWT_TOKEN_ISSUER: 'restaurant-api',
   AWS_REGION: 'ap-southeast-1',
   AWS_S3_BUCKET: 'restaurant-files',
+  RESTAURANT_TIME_ZONE: 'Asia/Yangon',
 };
 
 describe('environment validation', () => {
@@ -36,6 +37,35 @@ describe('environment validation', () => {
       environmentValidation.safeParse({
         ...baseEnvironment,
         AWS_ACCESS_KEY_ID: 'access-key',
+      }).success,
+    ).toBe(false);
+  });
+
+  it('accepts supported IANA zones and aliases', () => {
+    expect(
+      environmentValidation.safeParse({
+        ...baseEnvironment,
+        RESTAURANT_TIME_ZONE: 'America/New_York',
+      }).success,
+    ).toBe(true);
+    expect(
+      environmentValidation.safeParse({
+        ...baseEnvironment,
+        RESTAURANT_TIME_ZONE: 'Asia/Rangoon',
+      }).success,
+    ).toBe(true);
+  });
+
+  it('rejects missing and invalid restaurant timezones', () => {
+    const { RESTAURANT_TIME_ZONE: _timeZone, ...missingTimeZone } =
+      baseEnvironment;
+    expect(environmentValidation.safeParse(missingTimeZone).success).toBe(
+      false,
+    );
+    expect(
+      environmentValidation.safeParse({
+        ...baseEnvironment,
+        RESTAURANT_TIME_ZONE: 'Yangon',
       }).success,
     ).toBe(false);
   });

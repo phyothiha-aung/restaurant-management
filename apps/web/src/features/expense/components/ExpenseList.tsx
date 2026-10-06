@@ -15,6 +15,8 @@ import {
   formatExpenseAmount,
   formatExpenseCategory,
 } from "../expense-options";
+import { useAppConfig } from "../../app-config/app-config-context";
+import { formatDateOnly, formatTimestamp } from "../../../lib/date-format";
 
 interface ExpenseListProps {
   expenses: Expense[];
@@ -24,14 +26,10 @@ interface ExpenseListProps {
   onVoid: (expense: Expense) => void;
 }
 
-const dateFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: "medium" });
 const statusTone: Record<ExpenseStatus, "success" | "neutral"> = {
   ACTIVE: "success",
   VOIDED: "neutral",
 };
-const formatExpenseDate = (value: string) =>
-  dateFormatter.format(new Date(`${value}T00:00:00`));
-
 export function ExpenseList({
   expenses,
   pendingExpenseId,
@@ -39,6 +37,7 @@ export function ExpenseList({
   onEdit,
   onVoid,
 }: ExpenseListProps) {
+  const { timeZone } = useAppConfig();
   return (
     <>
       <div className="hidden overflow-x-auto md:block">
@@ -76,13 +75,13 @@ export function ExpenseList({
                     {formatExpenseAmount(expense.amount)}
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 text-xs text-muted">
-                    {formatExpenseDate(expense.expenseDate)}
+                    {formatDateOnly(expense.expenseDate)}
                   </td>
                   <td className="px-4 py-4">
                     <Badge tone={statusTone[expense.status]}>{expense.status}</Badge>
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 text-xs text-muted">
-                    {dateFormatter.format(new Date(expense.updatedAt))}
+                    {formatTimestamp(expense.updatedAt, timeZone, { dateStyle: "medium" })}
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex justify-end gap-1">
@@ -134,13 +133,13 @@ export function ExpenseList({
                 </p>
                 <p className="flex items-center gap-2">
                   <CalendarDays className="shrink-0" size={14} />
-                  {formatExpenseDate(expense.expenseDate)}
+                  {formatDateOnly(expense.expenseDate)}
                 </p>
                 <p className="flex items-center gap-2">
                   <Paperclip className="shrink-0" size={14} />
                   {expense.attachmentCount} attachment{expense.attachmentCount === 1 ? "" : "s"}
                 </p>
-                <p>Updated {dateFormatter.format(new Date(expense.updatedAt))}</p>
+                <p>Updated {formatTimestamp(expense.updatedAt, timeZone, { dateStyle: "medium" })}</p>
               </div>
               <div className="mt-4 flex flex-wrap gap-2 border-t border-line pt-3">
                 <Button size="sm" variant="ghost" onClick={() => onView(expense)}>

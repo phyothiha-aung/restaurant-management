@@ -1,3 +1,7 @@
+export type AppConfig = {
+  timeZone: string;
+};
+
 export type UserRole =
   | "SUPERADMIN"
   | "ADMIN"

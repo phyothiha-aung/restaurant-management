@@ -22,12 +22,3 @@ export const OrderDateSchema = z
       !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value
     );
   }, 'Must be a valid calendar date');
-
-export const toOrderDateStart = (value: string) =>
-  new Date(`${value}T00:00:00.000Z`);
-
-export const toOrderDateEndExclusive = (value: string) => {
-  const date = toOrderDateStart(value);
-  date.setUTCDate(date.getUTCDate() + 1);
-  return date;
-};

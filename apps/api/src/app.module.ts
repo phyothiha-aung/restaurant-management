@@ -14,6 +14,7 @@ import { ProductCategoryModule } from './product-category/product-category.modul
 import { ProductModule } from './product/product.module.js';
 import { OrderModule } from './order/order.module.js';
 import { DiningTableModule } from './dining-table/dining-table.module.js';
+import { AppConfigModule } from './app-config/app-config.module.js';
 
 const ENV = process.env.NODE_ENV;
 
@@ -45,6 +46,7 @@ const ENV = process.env.NODE_ENV;
     ProductModule,
     OrderModule,
     DiningTableModule,
+    AppConfigModule,
     CryptoModule,
   ],
   providers: [

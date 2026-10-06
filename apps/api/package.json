@@ -36,6 +36,8 @@
     "@prisma/client": "^7.10.0",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
+    "date-fns": "^4.1.0",
+    "date-fns-tz": "^3.2.0",
     "nestjs-zod": "^5.5.0",
     "pg": "^8.23.0",
     "reflect-metadata": "^0.2.2",

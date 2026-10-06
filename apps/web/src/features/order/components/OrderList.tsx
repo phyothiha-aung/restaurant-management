@@ -2,6 +2,8 @@ import type { OrderSummary } from "@restaurant-management/shared";
 import { Armchair, CalendarDays, Eye, Pencil, ShoppingBag } from "lucide-react";
 import { Link } from "react-router";
 import { Badge } from "../../../components/ui/Badge";
+import { useAppConfig } from "../../app-config/app-config-context";
+import { formatTimestamp } from "../../../lib/date-format";
 import {
   formatMoney,
   formatOrderNumber,
@@ -14,12 +16,8 @@ interface OrderListProps {
   canOperate: boolean;
 }
 
-const dateTime = new Intl.DateTimeFormat(undefined, {
-  dateStyle: "medium",
-  timeStyle: "short",
-});
-
 export function OrderList({ orders, canOperate }: OrderListProps) {
+  const { timeZone } = useAppConfig();
   return (
     <>
       <div className="hidden overflow-x-auto md:block">
@@ -75,7 +73,7 @@ export function OrderList({ orders, canOperate }: OrderListProps) {
                   </Badge>
                 </td>
                 <td className="whitespace-nowrap px-4 py-4 text-xs text-muted">
-                  {dateTime.format(new Date(order.createdAt))}
+                  {formatTimestamp(order.createdAt, timeZone)}
                 </td>
                 <td className="px-5 py-4">
                   <div className="flex justify-end gap-1">
@@ -137,7 +135,7 @@ export function OrderList({ orders, canOperate }: OrderListProps) {
               <p>Created by {order.createdBy.name}</p>
               <p className="flex items-center gap-2">
                 <CalendarDays size={14} />
-                {dateTime.format(new Date(order.createdAt))}
+                {formatTimestamp(order.createdAt, timeZone)}
               </p>
             </div>
             <div className="mt-4 flex gap-2 border-t border-line pt-3">

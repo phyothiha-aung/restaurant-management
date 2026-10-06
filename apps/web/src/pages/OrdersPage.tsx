@@ -13,6 +13,7 @@ import { isOrderStatus } from "../features/order/order-utils";
 import { getApiErrorMessage } from "../lib/api-error";
 import { canOperateOrders } from "../lib/user-display";
 import { useAuthStore } from "../store/useAuthStore";
+import { useAppConfig } from "../features/app-config/app-config-context";
 
 const PAGE_LIMIT = 10;
 
@@ -30,6 +31,7 @@ const parseDate = (value: string | null) => {
 };
 
 export function OrdersPage() {
+  const { timeZone } = useAppConfig();
   const actor = useAuthStore((state) => state.user);
   const [params, setParams] = useSearchParams();
   const page = parsePositiveInt(params.get("page")) ?? 1;
@@ -160,6 +162,9 @@ export function OrdersPage() {
           min={dateFrom}
           onChange={(value) => setFilter("dateTo", value)}
         />
+        <p className="text-xs text-muted sm:col-span-2 xl:col-span-5">
+          Date ranges use the restaurant timezone: {timeZone}.
+        </p>
       </Card>
 
       <Card className="overflow-hidden">

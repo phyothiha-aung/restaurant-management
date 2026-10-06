@@ -1,12 +1,10 @@
 import type { ProductCategory } from "@restaurant-management/shared";
 import { Badge } from "../../../components/ui/Badge";
-
-const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
-  dateStyle: "medium",
-  timeStyle: "short",
-});
+import { useAppConfig } from "../../app-config/app-config-context";
+import { formatTimestamp } from "../../../lib/date-format";
 
 export function ProductCategoryDetails({ category }: { category: ProductCategory }) {
+  const { timeZone } = useAppConfig();
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border border-line bg-surface p-5">
@@ -24,8 +22,8 @@ export function ProductCategoryDetails({ category }: { category: ProductCategory
       </div>
       <dl className="grid gap-4 sm:grid-cols-2">
         <Detail label="Sort order" value={category.sortOrder.toString()} />
-        <Detail label="Created" value={dateTimeFormatter.format(new Date(category.createdAt))} />
-        <Detail label="Last updated" value={dateTimeFormatter.format(new Date(category.updatedAt))} />
+        <Detail label="Created" value={formatTimestamp(category.createdAt, timeZone)} />
+        <Detail label="Last updated" value={formatTimestamp(category.updatedAt, timeZone)} />
       </dl>
     </div>
   );

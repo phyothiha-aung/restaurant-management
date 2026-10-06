@@ -12,6 +12,8 @@ import type { ReactNode } from "react";
 import { Badge } from "../../../components/ui/Badge";
 import { Button } from "../../../components/ui/Button";
 import { formatRole } from "../../../lib/user-display";
+import { useAppConfig } from "../../app-config/app-config-context";
+import { formatTimestamp } from "../../../lib/date-format";
 
 interface UserListProps {
   users: User[];
@@ -22,7 +24,6 @@ interface UserListProps {
   onReactivate: (user: User) => void;
 }
 
-const dateFormatter = new Intl.DateTimeFormat(undefined, { dateStyle: "medium" });
 const statusTone: Record<UserStatus, "success" | "gold" | "neutral"> = {
   ACTIVE: "success",
   PENDING: "gold",
@@ -37,6 +38,7 @@ export function UserList({
   onDeactivate,
   onReactivate,
 }: UserListProps) {
+  const { timeZone } = useAppConfig();
   return (
     <>
       <div className="hidden overflow-x-auto md:block">
@@ -74,10 +76,10 @@ export function UserList({
                     <Badge tone={statusTone[user.status]}>{user.status}</Badge>
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 text-xs text-muted">
-                    {user.lastLoginAt ? dateFormatter.format(new Date(user.lastLoginAt)) : "Never"}
+                    {user.lastLoginAt ? formatTimestamp(user.lastLoginAt, timeZone, { dateStyle: "medium" }) : "Never"}
                   </td>
                   <td className="whitespace-nowrap px-4 py-4 text-xs text-muted">
-                    {dateFormatter.format(new Date(user.updatedAt))}
+                    {formatTimestamp(user.updatedAt, timeZone, { dateStyle: "medium" })}
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex justify-end gap-1">
@@ -130,9 +132,9 @@ export function UserList({
                 </p>
                 <p className="flex items-center gap-2">
                   <Mail className="shrink-0" size={14} />
-                  Last login: {user.lastLoginAt ? dateFormatter.format(new Date(user.lastLoginAt)) : "Never"}
+                  Last login: {user.lastLoginAt ? formatTimestamp(user.lastLoginAt, timeZone, { dateStyle: "medium" }) : "Never"}
                 </p>
-                <p>Updated {dateFormatter.format(new Date(user.updatedAt))}</p>
+                <p>Updated {formatTimestamp(user.updatedAt, timeZone, { dateStyle: "medium" })}</p>
               </div>
               <div className="mt-4 flex flex-wrap gap-2 border-t border-line pt-3">
                 <Button size="sm" variant="ghost" onClick={() => onView(user)}>

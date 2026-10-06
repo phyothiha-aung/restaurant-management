@@ -1,15 +1,12 @@
 import type { User, UserStatus } from "@restaurant-management/shared";
 import { Badge } from "../../../components/ui/Badge";
 import { formatRole } from "../../../lib/user-display";
+import { useAppConfig } from "../../app-config/app-config-context";
+import { formatTimestamp } from "../../../lib/date-format";
 
 interface UserDetailsProps {
   user: User;
 }
-
-const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
-  dateStyle: "medium",
-  timeStyle: "short",
-});
 
 const statusTone: Record<UserStatus, "success" | "gold" | "neutral"> = {
   ACTIVE: "success",
@@ -18,6 +15,7 @@ const statusTone: Record<UserStatus, "success" | "gold" | "neutral"> = {
 };
 
 export function UserDetails({ user }: UserDetailsProps) {
+  const { timeZone } = useAppConfig();
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border border-line bg-surface p-5">
@@ -34,13 +32,13 @@ export function UserDetails({ user }: UserDetailsProps) {
         <Detail label="Role" value={formatRole(user.role)} />
         <Detail
           label="Last login"
-          value={user.lastLoginAt ? dateTimeFormatter.format(new Date(user.lastLoginAt)) : "Never"}
+          value={user.lastLoginAt ? formatTimestamp(user.lastLoginAt, timeZone) : "Never"}
         />
-        <Detail label="Created" value={dateTimeFormatter.format(new Date(user.createdAt))} />
-        <Detail label="Last updated" value={dateTimeFormatter.format(new Date(user.updatedAt))} />
+        <Detail label="Created" value={formatTimestamp(user.createdAt, timeZone)} />
+        <Detail label="Last updated" value={formatTimestamp(user.updatedAt, timeZone)} />
         <Detail
           label="Verified"
-          value={user.verifiedAt ? dateTimeFormatter.format(new Date(user.verifiedAt)) : "Not verified"}
+          value={user.verifiedAt ? formatTimestamp(user.verifiedAt, timeZone) : "Not verified"}
         />
       </dl>
     </div>

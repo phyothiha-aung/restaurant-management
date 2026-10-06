@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import type { Request } from 'express';
+import { BusinessTimeService } from '../../app-config/business-time.service.js';
 import { ActiveUserDto } from '../../auth/dtos/active-user.dto.js';
 import { PaginationProvider } from '../../common/pagination/providers/pagination.provider.js';
 import {
@@ -24,10 +25,6 @@ import {
   type OrderDiscountSchema,
 } from '../dtos/create-order.dto.js';
 import { OrderQueryDto } from '../dtos/order-query.dto.js';
-import {
-  toOrderDateEndExclusive,
-  toOrderDateStart,
-} from '../dtos/order-validation.js';
 import { UpdateOrderDto } from '../dtos/update-order.dto.js';
 import type { z } from '../../common/lib/zod.js';
 
@@ -148,6 +145,7 @@ export class OrderService {
     private readonly prisma: PrismaService,
     private readonly pagination: PaginationProvider,
     private readonly users: UserService,
+    private readonly businessTime: BusinessTimeService,
   ) {}
 
   async findAll(
@@ -164,8 +162,12 @@ export class OrderService {
     if (query.dateFrom || query.dateTo) {
       filters.push({
         createdAt: {
-          ...(query.dateFrom && { gte: toOrderDateStart(query.dateFrom) }),
-          ...(query.dateTo && { lt: toOrderDateEndExclusive(query.dateTo) }),
+          ...(query.dateFrom && {
+            gte: this.businessTime.startOfBusinessDate(query.dateFrom),
+          }),
+          ...(query.dateTo && {
+            lt: this.businessTime.endExclusiveOfBusinessDate(query.dateTo),
+          }),
         },
       });
     }

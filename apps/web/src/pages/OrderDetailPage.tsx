@@ -28,13 +28,11 @@ import {
 import { getApiErrorMessage } from "../lib/api-error";
 import { canOperateOrders } from "../lib/user-display";
 import { useAuthStore } from "../store/useAuthStore";
-
-const dateTime = new Intl.DateTimeFormat(undefined, {
-  dateStyle: "medium",
-  timeStyle: "short",
-});
+import { useAppConfig } from "../features/app-config/app-config-context";
+import { formatTimestamp } from "../lib/date-format";
 
 export function OrderDetailPage() {
+  const { timeZone } = useAppConfig();
   const actor = useAuthStore((state) => state.user);
   const navigate = useNavigate();
   const idParam = Number(useParams().id);
@@ -169,13 +167,13 @@ export function OrderDetailPage() {
               <InfoRow icon={<Armchair size={16} />} label="Order type" value={order.orderType === "DINE_IN" ? `Dine in · ${order.tableName}` : "Takeaway"} />
               <InfoRow icon={<UserRound size={16} />} label="Created by" value={order.createdBy.name} />
               <InfoRow icon={<UserRound size={16} />} label="Last updated by" value={order.updatedBy.name} />
-              <InfoRow icon={<CalendarClock size={16} />} label="Created" value={dateTime.format(new Date(order.createdAt))} />
-              <InfoRow icon={<CalendarClock size={16} />} label="Last updated" value={dateTime.format(new Date(order.updatedAt))} />
+              <InfoRow icon={<CalendarClock size={16} />} label="Created" value={formatTimestamp(order.createdAt, timeZone)} />
+              <InfoRow icon={<CalendarClock size={16} />} label="Last updated" value={formatTimestamp(order.updatedAt, timeZone)} />
               {order.completedAt && (
-                <InfoRow icon={<CheckCircle2 size={16} />} label="Completed" value={dateTime.format(new Date(order.completedAt))} />
+                <InfoRow icon={<CheckCircle2 size={16} />} label="Completed" value={formatTimestamp(order.completedAt, timeZone)} />
               )}
               {order.cancelledAt && (
-                <InfoRow icon={<XCircle size={16} />} label="Cancelled" value={dateTime.format(new Date(order.cancelledAt))} />
+                <InfoRow icon={<XCircle size={16} />} label="Cancelled" value={formatTimestamp(order.cancelledAt, timeZone)} />
               )}
             </dl>
           </Card>

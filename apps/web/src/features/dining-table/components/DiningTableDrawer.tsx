@@ -10,6 +10,8 @@ import { Drawer } from "../../../components/ui/Drawer";
 import { InputField } from "../../../components/ui/FormField";
 import { getApiErrorMessage } from "../../../lib/api-error";
 import { formatOrderNumber } from "../../order/order-utils";
+import { useAppConfig } from "../../app-config/app-config-context";
+import { formatTimestamp } from "../../../lib/date-format";
 import {
   useCreateDiningTable,
   useDiningTable,
@@ -183,6 +185,7 @@ const statusTone = {
 } as const;
 
 function TableDetails({ table }: { table: DiningTable }) {
+  const { timeZone } = useAppConfig();
   return (
     <div className="space-y-6">
       <div className="rounded-2xl border border-line bg-surface p-5">
@@ -218,10 +221,7 @@ function TableDetails({ table }: { table: DiningTable }) {
         <Detail label="Display order" value={String(table.sortOrder)} />
         <Detail
           label="Last updated"
-          value={new Intl.DateTimeFormat(undefined, {
-            dateStyle: "medium",
-            timeStyle: "short",
-          }).format(new Date(table.updatedAt))}
+          value={formatTimestamp(table.updatedAt, timeZone)}
         />
       </dl>
     </div>
