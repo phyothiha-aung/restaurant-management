@@ -1,14 +1,37 @@
-import { ArrowRight, ShoppingCart, UserPlus, Users, UtensilsCrossed } from "lucide-react";
+import {
+  ArrowRight,
+  ChartNoAxesCombined,
+  ReceiptText,
+  RefreshCw,
+  ShoppingCart,
+  UserPlus,
+  Users,
+  UtensilsCrossed,
+} from "lucide-react";
+import { useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Badge } from "../components/ui/Badge";
+import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { PageHeader } from "../components/ui/PageHeader";
 import { canManageUsers, formatRole } from "../lib/user-display";
 import { useAuthStore } from "../store/useAuthStore";
+import { useProfile } from "../features/profile/profile-services";
+import { getApiErrorMessage } from "../lib/api-error";
 
 export function OverviewPage() {
-  const user = useAuthStore((state) => state.user);
+  const storedUser = useAuthStore((state) => state.user);
+  const token = useAuthStore((state) => state.token);
+  const setAuth = useAuthStore((state) => state.setAuth);
+  const profileQuery = useProfile();
+  const user = profileQuery.data ?? storedUser;
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (profileQuery.data && token) {
+      setAuth(profileQuery.data, token);
+    }
+  }, [profileQuery.data, setAuth, token]);
 
   if (!user) return null;
 
@@ -23,6 +46,29 @@ export function OverviewPage() {
         description="Everything you need to get started with your Ann Htike workspace."
         action={<Badge tone="gold">{formatRole(user.role)}</Badge>}
       />
+
+      {profileQuery.isError && (
+        <div className="flex flex-col gap-3 rounded-2xl border border-danger/20 bg-brand-red-soft p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-bold text-danger">
+              Session check unavailable
+            </p>
+            <p className="mt-1 text-xs text-muted">
+              {getApiErrorMessage(
+                profileQuery.error,
+                "Could not reach the server. Your saved session is still shown.",
+              )}
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => void profileQuery.refetch()}
+          >
+            <RefreshCw size={15} /> Retry
+          </Button>
+        </div>
+      )}
 
       <section className="relative overflow-hidden rounded-2xl bg-brand-red p-6 text-white shadow-card sm:p-8">
         <div className="absolute -right-12 -top-16 h-48 w-48 rounded-full border-34 border-brand-gold/20" />
@@ -73,6 +119,22 @@ export function OverviewPage() {
               title="Manage catalog"
               description="Maintain products, variants, and reusable add-ons."
               onClick={() => navigate("/catalog")}
+            />
+          )}
+          {managesUsers && (
+            <ActionCard
+              icon={ReceiptText}
+              title="Manage expenses"
+              description="Record and review restaurant operating costs."
+              onClick={() => navigate("/expenses")}
+            />
+          )}
+          {managesUsers && (
+            <ActionCard
+              icon={ChartNoAxesCombined}
+              title="View reports"
+              description="Review sales, expenses, and profit performance."
+              onClick={() => navigate("/reports")}
             />
           )}
         </div>
