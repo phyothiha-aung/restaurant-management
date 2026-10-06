@@ -10,6 +10,7 @@ import { CatalogPage } from "./pages/CatalogPage";
 import { OrdersPage } from "./pages/OrdersPage";
 import { OrderDetailPage } from "./pages/OrderDetailPage";
 import { OrderEditorPage } from "./pages/OrderEditorPage";
+import { TablesPage } from "./pages/TablesPage";
 import { useAuthStore } from "./store/useAuthStore";
 import {
   canManageProductCategories,
@@ -35,6 +36,7 @@ export function AppRoutes() {
             <Route path="product-categories" element={<ProductCategoriesPage />} />
           </Route>
           <Route path="profile" element={<ProfilePage />} />
+          <Route path="tables" element={<TablesPage />} />
           <Route path="orders" element={<OrdersPage />} />
           <Route path="orders/:id" element={<OrderDetailPage />} />
           <Route element={<OrderOperatorRoute />}>

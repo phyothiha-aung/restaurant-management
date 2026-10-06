@@ -1,12 +1,14 @@
 import { createZodDto } from 'nestjs-zod';
 import { PaginationQuerySchema } from '../../common/pagination/dtos/pagination-query-dto.js';
-import { OrderStatus } from '../../generated/prisma/enums.js';
+import { OrderStatus, OrderType } from '../../generated/prisma/enums.js';
 import { z } from '../../common/lib/zod.js';
 import { OrderDateSchema } from './order-validation.js';
 
 export const OrderQuerySchema = PaginationQuerySchema.omit({ search: true })
   .extend({
     status: z.enum(OrderStatus).optional(),
+    orderType: z.enum(OrderType).optional(),
+    tableId: z.coerce.number().int().positive().optional(),
     createdById: z.coerce.number().int().positive().optional(),
     dateFrom: OrderDateSchema.optional(),
     dateTo: OrderDateSchema.optional(),

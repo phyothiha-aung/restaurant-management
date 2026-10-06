@@ -13,6 +13,7 @@ import { StorageModule } from './storage/storage.module.js';
 import { ProductCategoryModule } from './product-category/product-category.module.js';
 import { ProductModule } from './product/product.module.js';
 import { OrderModule } from './order/order.module.js';
+import { DiningTableModule } from './dining-table/dining-table.module.js';
 
 const ENV = process.env.NODE_ENV;
 
@@ -43,6 +44,7 @@ const ENV = process.env.NODE_ENV;
     ProductCategoryModule,
     ProductModule,
     OrderModule,
+    DiningTableModule,
     CryptoModule,
   ],
   providers: [

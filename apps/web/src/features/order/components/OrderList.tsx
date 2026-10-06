@@ -1,5 +1,5 @@
 import type { OrderSummary } from "@restaurant-management/shared";
-import { CalendarDays, Eye, Pencil, ShoppingBag } from "lucide-react";
+import { Armchair, CalendarDays, Eye, Pencil, ShoppingBag } from "lucide-react";
 import { Link } from "react-router";
 import { Badge } from "../../../components/ui/Badge";
 import {
@@ -26,6 +26,7 @@ export function OrderList({ orders, canOperate }: OrderListProps) {
           <thead>
             <tr className="border-b border-line bg-surface text-[0.68rem] font-extrabold uppercase tracking-[0.08em] text-muted">
               <th className="px-5 py-3.5">Order</th>
+              <th className="px-4 py-3.5">Type / table</th>
               <th className="px-4 py-3.5">Created by</th>
               <th className="px-4 py-3.5">Items</th>
               <th className="px-4 py-3.5">Total</th>
@@ -44,6 +45,12 @@ export function OrderList({ orders, canOperate }: OrderListProps) {
                   >
                     Order #{order.id}
                   </Link>
+                </td>
+                <td className="max-w-44 px-4 py-4 text-xs text-muted">
+                  <span className="block truncate font-semibold text-ink">
+                    {order.orderType === "DINE_IN" ? order.tableName : "Takeaway"}
+                  </span>
+                  <span>{order.orderType === "DINE_IN" ? "Dine in" : "No table"}</span>
                 </td>
                 <td className="max-w-40 px-4 py-4 text-xs text-muted">
                   <span className="block truncate">{order.createdBy.name}</span>
@@ -111,6 +118,9 @@ export function OrderList({ orders, canOperate }: OrderListProps) {
               </Badge>
             </div>
             <div className="mt-4 grid gap-2 text-xs text-muted">
+              <p className="flex items-center gap-2 font-semibold text-ink">
+                <Armchair size={14} /> {order.orderType === "DINE_IN" ? order.tableName : "Takeaway"}
+              </p>
               <p className="flex items-center gap-2">
                 <ShoppingBag size={14} /> {order.itemCount} item
                 {order.itemCount === 1 ? "" : "s"}

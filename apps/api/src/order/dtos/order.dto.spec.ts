@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { DiscountType, OrderStatus } from '../../generated/prisma/enums.js';
+import {
+  DiscountType,
+  OrderStatus,
+  OrderType,
+} from '../../generated/prisma/enums.js';
 import { CreateOrderSchema } from './create-order.dto.js';
 import { OrderQuerySchema } from './order-query.dto.js';
 import { UpdateOrderSchema } from './update-order.dto.js';
@@ -9,10 +13,12 @@ const item = {
   quantity: 2,
   addons: [{ addonId: 20, quantity: 1 }],
 };
+const takeaway = { orderType: OrderType.TAKEAWAY };
 
 describe('order DTOs', () => {
   it('defaults tax to zero and add-on collections to an array', () => {
     const result = CreateOrderSchema.parse({
+      ...takeaway,
       items: [{ productVariantId: 10, quantity: 1 }],
     });
     expect(result.taxPercent).toBe('0');
@@ -22,12 +28,14 @@ describe('order DTOs', () => {
   it('accepts fixed and percentage discounts', () => {
     expect(
       CreateOrderSchema.safeParse({
+        ...takeaway,
         items: [item],
         discount: { type: DiscountType.FIXED_AMOUNT, value: '500' },
       }).success,
     ).toBe(true);
     expect(
       CreateOrderSchema.safeParse({
+        ...takeaway,
         items: [item],
         discount: { type: DiscountType.PERCENT, value: '12.5' },
       }).success,
@@ -39,6 +47,7 @@ describe('order DTOs', () => {
     (value) => {
       expect(
         CreateOrderSchema.safeParse({
+          ...takeaway,
           items: [item],
           discount: { type: DiscountType.PERCENT, value },
         }).success,
@@ -49,6 +58,7 @@ describe('order DTOs', () => {
   it('rejects duplicate add-ons and invalid quantities', () => {
     expect(
       CreateOrderSchema.safeParse({
+        ...takeaway,
         items: [
           {
             ...item,
@@ -61,8 +71,29 @@ describe('order DTOs', () => {
       }).success,
     ).toBe(false);
     expect(
-      CreateOrderSchema.safeParse({ items: [{ ...item, quantity: 0 }] })
+      CreateOrderSchema.safeParse({ ...takeaway, items: [{ ...item, quantity: 0 }] })
         .success,
+    ).toBe(false);
+  });
+
+  it('requires a table for dine-in and forbids one for takeaway', () => {
+    expect(
+      CreateOrderSchema.safeParse({ orderType: OrderType.DINE_IN, items: [item] })
+        .success,
+    ).toBe(false);
+    expect(
+      CreateOrderSchema.safeParse({
+        orderType: OrderType.DINE_IN,
+        tableId: 2,
+        items: [item],
+      }).success,
+    ).toBe(true);
+    expect(
+      CreateOrderSchema.safeParse({
+        orderType: OrderType.TAKEAWAY,
+        tableId: 2,
+        items: [item],
+      }).success,
     ).toBe(false);
   });
 

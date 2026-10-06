@@ -4,7 +4,11 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { describe, expect, it, vi } from 'vitest';
-import { DiscountType, UserRole } from '../../generated/prisma/enums.js';
+import {
+  DiscountType,
+  OrderType,
+  UserRole,
+} from '../../generated/prisma/enums.js';
 import { Prisma } from '../../generated/prisma/client.js';
 import { OrderService } from './order.service.js';
 
@@ -116,5 +120,71 @@ describe('OrderService calculations and permissions', () => {
         addons: [{ addonId: 20, quantity: 2 }],
       }),
     ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('captures the table name for a dine-in order', async () => {
+    const { service } = createService();
+    const tx: any = {
+      diningTable: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 3,
+          name: 'Table 3',
+          isActive: true,
+          orders: [],
+        }),
+      },
+    };
+
+    await expect(
+      (service as any).resolveCreateAssignment(tx, {
+        orderType: OrderType.DINE_IN,
+        tableId: 3,
+      }),
+    ).resolves.toEqual({
+      orderType: OrderType.DINE_IN,
+      tableId: 3,
+      tableName: 'Table 3',
+    });
+  });
+
+  it('rejects an occupied table', async () => {
+    const { service } = createService();
+    const tx: any = {
+      diningTable: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 3,
+          name: 'Table 3',
+          isActive: true,
+          orders: [{ id: 9 }],
+        }),
+      },
+    };
+
+    await expect(
+      (service as any).resolveCreateAssignment(tx, {
+        orderType: OrderType.DINE_IN,
+        tableId: 3,
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('converts an open dine-in order to takeaway and clears its table', async () => {
+    const { service } = createService();
+    await expect(
+      (service as any).resolveUpdateAssignment(
+        {},
+        {
+          id: 8,
+          orderType: OrderType.DINE_IN,
+          tableId: 3,
+          tableName: 'Table 3',
+        },
+        { orderType: OrderType.TAKEAWAY },
+      ),
+    ).resolves.toEqual({
+      orderType: OrderType.TAKEAWAY,
+      tableId: null,
+      tableName: null,
+    });
   });
 });

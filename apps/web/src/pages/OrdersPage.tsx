@@ -1,10 +1,12 @@
 import { ClipboardList, Plus, RefreshCw } from "lucide-react";
+import type { OrderType } from "@restaurant-management/shared";
 import { useEffect, useMemo } from "react";
 import { Link, useSearchParams } from "react-router";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { PageHeader } from "../components/ui/PageHeader";
 import { Pagination } from "../components/ui/Pagination";
+import { useDiningTables } from "../features/dining-table/dining-table-services";
 import { OrderList } from "../features/order/components/OrderList";
 import { useOrders } from "../features/order/order-services";
 import { isOrderStatus } from "../features/order/order-utils";
@@ -33,6 +35,12 @@ export function OrdersPage() {
   const page = parsePositiveInt(params.get("page")) ?? 1;
   const statusParam = params.get("status");
   const status = isOrderStatus(statusParam) ? statusParam : undefined;
+  const orderTypeParam = params.get("orderType");
+  const orderType: OrderType | undefined =
+    orderTypeParam === "DINE_IN" || orderTypeParam === "TAKEAWAY"
+      ? orderTypeParam
+      : undefined;
+  const tableId = parsePositiveInt(params.get("tableId"));
   const dateFrom = parseDate(params.get("dateFrom"));
   const parsedDateTo = parseDate(params.get("dateTo"));
   const dateTo = dateFrom && parsedDateTo && dateFrom > parsedDateTo
@@ -45,12 +53,15 @@ export function OrdersPage() {
       page,
       limit: PAGE_LIMIT,
       ...(status && { status }),
+      ...(orderType && { orderType }),
+      ...(tableId && { tableId }),
       ...(dateFrom && { dateFrom }),
       ...(dateTo && { dateTo }),
     }),
-    [dateFrom, dateTo, page, status],
+    [dateFrom, dateTo, orderType, page, status, tableId],
   );
   const ordersQuery = useOrders(query);
+  const tablesQuery = useDiningTables({ page: 1, limit: 100 });
 
   useEffect(() => {
     const totalPages = ordersQuery.data?.meta.totalPages;
@@ -64,7 +75,7 @@ export function OrdersPage() {
   if (!actor) return null;
 
   const setFilter = (
-    key: "status" | "dateFrom" | "dateTo",
+    key: "status" | "orderType" | "tableId" | "dateFrom" | "dateTo",
     value: string,
   ) => {
     const next = new URLSearchParams(params);
@@ -86,7 +97,7 @@ export function OrdersPage() {
   };
 
   const orders = ordersQuery.data?.data ?? [];
-  const hasFilters = Boolean(status || dateFrom || dateTo);
+  const hasFilters = Boolean(status || orderType || tableId || dateFrom || dateTo);
 
   return (
     <div className="space-y-7">
@@ -106,7 +117,7 @@ export function OrdersPage() {
         }
       />
 
-      <Card className="grid items-end gap-3 p-4 sm:grid-cols-2 xl:grid-cols-4">
+      <Card className="grid items-end gap-3 p-4 sm:grid-cols-2 xl:grid-cols-5">
         <FilterSelect
           label="Order status"
           value={status ?? "all"}
@@ -116,6 +127,26 @@ export function OrdersPage() {
           <option value="OPEN">Open</option>
           <option value="COMPLETED">Completed</option>
           <option value="CANCELLED">Cancelled</option>
+        </FilterSelect>
+        <FilterSelect
+          label="Order type"
+          value={orderType ?? "all"}
+          onChange={(value) => setFilter("orderType", value)}
+        >
+          <option value="all">All order types</option>
+          <option value="DINE_IN">Dine in</option>
+          <option value="TAKEAWAY">Takeaway</option>
+        </FilterSelect>
+        <FilterSelect
+          label="Table"
+          value={tableId?.toString() ?? "all"}
+          disabled={tablesQuery.isPending || tablesQuery.isError}
+          onChange={(value) => setFilter("tableId", value)}
+        >
+          <option value="all">All tables</option>
+          {(tablesQuery.data?.data ?? []).map((table) => (
+            <option value={table.id} key={table.id}>{table.name}</option>
+          ))}
         </FilterSelect>
         <DateInput
           label="Created from"

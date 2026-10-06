@@ -1,11 +1,12 @@
-import type { DiscountType, MenuProduct, Order } from "@restaurant-management/shared";
-import { AlertCircle, ArrowLeft, Minus, Plus, Search, ShoppingBag, Trash2 } from "lucide-react";
+import type { DiscountType, MenuProduct, Order, OrderType } from "@restaurant-management/shared";
+import { AlertCircle, ArrowLeft, Armchair, Minus, Plus, Search, ShoppingBag, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useBlocker, useNavigate } from "react-router";
 import { Button } from "../../../components/ui/Button";
 import { Card } from "../../../components/ui/Card";
 import { ConfirmDialog } from "../../../components/ui/ConfirmDialog";
 import { useAuthStore } from "../../../store/useAuthStore";
+import { useDiningTables } from "../../dining-table/dining-table-services";
 import { useCreateOrder, useOrderMenu, useUpdateOrder } from "../order-services";
 import {
   calculateOrderTotals,
@@ -29,7 +30,10 @@ export function OrderEditor({ order }: OrderEditorProps) {
   const actor = useAuthStore((state) => state.user);
   const navigate = useNavigate();
   const menuQuery = useOrderMenu();
+  const tablesQuery = useDiningTables({ page: 1, limit: 100, status: "AVAILABLE" });
   const [cart, setCart] = useState<CartItem[]>(() => order ? cartFromOrder(order) : []);
+  const [orderType, setOrderType] = useState<OrderType>(order?.orderType ?? "TAKEAWAY");
+  const [tableId, setTableId] = useState(order?.tableId?.toString() ?? "");
   const [discountType, setDiscountType] = useState<DiscountType | null>(order?.discountType ?? null);
   const [discountValue, setDiscountValue] = useState(order?.discountValue ?? "0");
   const [taxPercent, setTaxPercent] = useState(order?.taxPercent ?? "0");
@@ -39,6 +43,8 @@ export function OrderEditor({ order }: OrderEditorProps) {
   const [initialSnapshot] = useState(() =>
     snapshot(
       order ? cartFromOrder(order) : [],
+      order?.orderType ?? "TAKEAWAY",
+      order?.tableId?.toString() ?? "",
       order?.discountType ?? null,
       order?.discountValue ?? "0",
       order?.taxPercent ?? "0",
@@ -46,7 +52,7 @@ export function OrderEditor({ order }: OrderEditorProps) {
   );
   const allowNavigation = useRef(false);
 
-  const currentSnapshot = snapshot(cart, discountType, discountValue, taxPercent);
+  const currentSnapshot = snapshot(cart, orderType, tableId, discountType, discountValue, taxPercent);
   const isDirty = initialSnapshot !== currentSnapshot;
   const blocker = useBlocker(() => isDirty && !allowNavigation.current);
 
@@ -106,6 +112,7 @@ export function OrderEditor({ order }: OrderEditorProps) {
   const save = async () => {
     setError(null);
     if (cart.length === 0) return setError("Add at least one item before saving the order.");
+    if (orderType === "DINE_IN" && !tableId) return setError("Choose an available table for this dine-in order.");
     if (!isValidPercent(taxPercent)) return setError("Tax must be between 0 and 100 with at most two decimal places.");
     if (discountType && !isValidDecimal(discountValue)) return setError("Enter a valid discount with at most two decimal places.");
     if (discountType === "PERCENT" && !isValidPercent(discountValue)) return setError("Percentage discount must be between 0 and 100.");
@@ -120,8 +127,10 @@ export function OrderEditor({ order }: OrderEditorProps) {
     const discount = discountType ? { type: discountType, value: discountValue } : null;
     try {
       const saved = order
-        ? await updateMutation.mutateAsync({ id: order.id, input: { items, discount, taxPercent } })
+        ? await updateMutation.mutateAsync({ id: order.id, input: { orderType, tableId: orderType === "DINE_IN" ? Number(tableId) : null, items, discount, taxPercent } })
         : await createMutation.mutateAsync({
+            orderType,
+            tableId: orderType === "DINE_IN" ? Number(tableId) : null,
             items: items.map(({ id: _id, ...item }) => item),
             discount,
             taxPercent,
@@ -149,6 +158,12 @@ export function OrderEditor({ order }: OrderEditorProps) {
         <div className="xl:sticky xl:top-6">
           <Card className="overflow-hidden">
             <div className="flex items-center justify-between border-b border-line px-4 py-4"><div className="flex items-center gap-2"><ShoppingBag className="text-brand-red" size={19} /><h2 className="font-extrabold">Current order</h2></div><span className="text-xs font-bold text-muted">{cart.length} line{cart.length === 1 ? "" : "s"}</span></div>
+            <div className="space-y-3 border-b border-line bg-brand-gold-soft/50 p-4">
+              <div className="grid grid-cols-2 gap-2" role="group" aria-label="Order type">
+                {(["TAKEAWAY", "DINE_IN"] as OrderType[]).map((type) => <button className={`min-h-10 rounded-xl border px-3 text-sm font-bold transition ${orderType === type ? "border-brand-red bg-brand-red text-white" : "border-line bg-white text-ink"}`} type="button" key={type} onClick={() => { setOrderType(type); if (type === "TAKEAWAY") setTableId(""); setError(null); }}>{type === "DINE_IN" ? "Dine in" : "Takeaway"}</button>)}
+              </div>
+              {orderType === "DINE_IN" && <label className="grid gap-1.5"><span className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-muted"><Armchair size={14} /> Table</span><select className="min-h-11 rounded-xl border border-line bg-white px-3.5 text-sm font-semibold outline-none focus:border-brand-red focus:ring-4 focus:ring-brand-red-soft disabled:bg-line-soft" value={tableId} disabled={tablesQuery.isPending || tablesQuery.isError} onChange={(event) => { setTableId(event.target.value); setError(null); }}><option value="">{tablesQuery.isPending ? "Loading tables..." : tablesQuery.isError ? "Tables unavailable" : "Choose an available table"}</option>{order?.tableId && !tablesQuery.data?.data.some((table) => table.id === order.tableId) && <option value={order.tableId}>{order.tableName ?? order.table?.name ?? "Current table"}</option>}{(tablesQuery.data?.data ?? []).map((table) => <option value={table.id} key={table.id}>{table.name}{table.capacity ? ` · ${table.capacity} seats` : ""}</option>)}</select>{tablesQuery.isError && <button className="justify-self-start text-xs font-bold text-brand-red hover:underline" type="button" onClick={() => void tablesQuery.refetch()}>Retry loading tables</button>}</label>}
+            </div>
             {cart.length === 0 ? <div className="grid min-h-44 place-items-center p-6 text-center"><div><ShoppingBag className="mx-auto text-brand-gold-dark" /><p className="mt-3 text-sm font-bold">Your order is empty</p><p className="mt-1 text-xs text-muted">Choose a product to add the first item.</p></div></div> : <div className="max-h-[45vh] divide-y divide-line overflow-y-auto">{cart.map((item) => { const product = (menuQuery.data ?? []).find((entry) => entry.variants.some((variant) => variant.id === item.productVariantId)); return <CartRow key={item.clientKey} item={item} product={product} onCustomize={product ? () => setConfiguration({ product, item }) : undefined} onRemove={() => setCart((current) => current.filter((entry) => entry.clientKey !== item.clientKey))} onQuantity={(quantity) => updateItem(item.clientKey, (current) => ({ ...current, quantity }))} onAddonQuantity={(addonId, quantity) => updateItem(item.clientKey, (current) => ({ ...current, addons: quantity === 0 ? current.addons.filter((addon) => addon.addonId !== addonId) : current.addons.map((addon) => addon.addonId === addonId ? { ...addon, quantity } : addon) }))} />; })}</div>}
 
             <div className="space-y-4 border-t border-line bg-surface p-4">
@@ -176,7 +191,7 @@ function CartRow({ item, product, onCustomize, onRemove, onQuantity, onAddonQuan
 function MoneyRow({ label, value, strong = false }: { label: string; value: number; strong?: boolean }) { return <div className={`flex justify-between ${strong ? "text-base font-extrabold" : "text-muted"}`}><dt>{label}</dt><dd className={strong ? "text-brand-red" : "font-bold text-ink"}>{value < 0 ? "− " : ""}{formatMoney(minorToMoney(Math.abs(value)))}</dd></div>; }
 
 const itemSignature = (item: CartItem) => `${item.productVariantId}:${[...item.addons].sort((a,b) => a.addonId - b.addonId).map((addon) => `${addon.addonId}-${addon.quantity}`).join(",")}`;
-const snapshot = (cart: CartItem[], discountType: DiscountType | null, discountValue: string, taxPercent: string) => JSON.stringify({ cart, discountType, discountValue, taxPercent });
+const snapshot = (cart: CartItem[], orderType: OrderType, tableId: string, discountType: DiscountType | null, discountValue: string, taxPercent: string) => JSON.stringify({ cart, orderType, tableId, discountType, discountValue, taxPercent });
 
 const cartFromOrder = (order: Order): CartItem[] =>
   order.items.map((item) => ({

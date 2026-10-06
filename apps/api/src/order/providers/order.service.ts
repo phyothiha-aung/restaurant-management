@@ -12,6 +12,7 @@ import { PaginationProvider } from '../../common/pagination/providers/pagination
 import {
   DiscountType,
   OrderStatus,
+  OrderType,
   UserRole,
 } from '../../generated/prisma/enums.js';
 import { Prisma } from '../../generated/prisma/client.js';
@@ -43,10 +44,16 @@ const orderOperators = new Set<UserRole>([
 ]);
 
 const userSummary = { select: { id: true, name: true } } as const;
+const tableSummary = {
+  select: { id: true, name: true, capacity: true, isActive: true },
+} as const;
 const orderSummarySelect = {
   id: true,
+  tableId: true,
   createdById: true,
   updatedById: true,
+  orderType: true,
+  tableName: true,
   status: true,
   subtotal: true,
   discountType: true,
@@ -59,6 +66,7 @@ const orderSummarySelect = {
   cancelledAt: true,
   createdAt: true,
   updatedAt: true,
+  table: tableSummary,
   createdBy: userSummary,
   updatedBy: userSummary,
   _count: { select: { items: true } },
@@ -150,6 +158,8 @@ export class OrderService {
     await this.users.requireUser(activeUser.sub);
     const filters: Prisma.OrderWhereInput[] = [];
     if (query.status) filters.push({ status: query.status });
+    if (query.orderType) filters.push({ orderType: query.orderType });
+    if (query.tableId) filters.push({ tableId: query.tableId });
     if (query.createdById) filters.push({ createdById: query.createdById });
     if (query.dateFrom || query.dateTo) {
       filters.push({
@@ -184,6 +194,7 @@ export class OrderService {
   async create(dto: CreateOrderDto, activeUser: ActiveUserDto) {
     const actor = await this.requireOperator(activeUser.sub);
     return this.runSerializable(async (tx) => {
+      const assignment = await this.resolveCreateAssignment(tx, dto);
       const items = [];
       for (const item of dto.items) {
         items.push(await this.buildNewItem(tx, item));
@@ -195,6 +206,7 @@ export class OrderService {
       );
       const created = await tx.order.create({
         data: {
+          ...assignment,
           createdById: actor.id,
           updatedById: actor.id,
           ...totals,
@@ -218,6 +230,8 @@ export class OrderService {
       if (current.status !== OrderStatus.OPEN) {
         throw new ConflictException('Only open orders can be updated');
       }
+
+      const assignment = await this.resolveUpdateAssignment(tx, current, dto);
 
       if (dto.items !== undefined) {
         await this.replaceItems(tx, current, dto.items);
@@ -245,7 +259,7 @@ export class OrderService {
       );
       const updated = await tx.order.update({
         where: { id },
-        data: { ...totals, updatedById: actor.id },
+        data: { ...totals, ...assignment, updatedById: actor.id },
         select: orderDetailSelect,
       });
       return toOrderDetail(updated);
@@ -580,6 +594,93 @@ export class OrderService {
     return order;
   }
 
+  private async resolveCreateAssignment(
+    tx: Prisma.TransactionClient,
+    dto: CreateOrderDto,
+  ) {
+    if (dto.orderType === OrderType.TAKEAWAY) {
+      return { orderType: OrderType.TAKEAWAY, tableId: null, tableName: null };
+    }
+    if (!dto.tableId) {
+      throw new BadRequestException('A table is required for dine-in orders');
+    }
+    const table = await this.requireAvailableTable(tx, dto.tableId);
+    return {
+      orderType: OrderType.DINE_IN,
+      tableId: table.id,
+      tableName: table.name,
+    };
+  }
+
+  private async resolveUpdateAssignment(
+    tx: Prisma.TransactionClient,
+    current: OrderDetailRecord,
+    dto: UpdateOrderDto,
+  ) {
+    const targetType = dto.orderType ?? current.orderType;
+    if (targetType === OrderType.TAKEAWAY) {
+      if (dto.orderType === undefined && dto.tableId === null) {
+        throw new BadRequestException(
+          'Set orderType to TAKEAWAY when removing a table',
+        );
+      }
+      if (dto.tableId != null) {
+        throw new BadRequestException('Takeaway orders cannot have a table');
+      }
+      return { orderType: OrderType.TAKEAWAY, tableId: null, tableName: null };
+    }
+
+    const tableId = dto.tableId === undefined ? current.tableId : dto.tableId;
+    if (!tableId) {
+      throw new BadRequestException('A table is required for dine-in orders');
+    }
+    if (
+      current.orderType === OrderType.DINE_IN &&
+      current.tableId === tableId
+    ) {
+      return {
+        orderType: OrderType.DINE_IN,
+        tableId,
+        tableName: current.tableName,
+      };
+    }
+    const table = await this.requireAvailableTable(tx, tableId, current.id);
+    return {
+      orderType: OrderType.DINE_IN,
+      tableId: table.id,
+      tableName: table.name,
+    };
+  }
+
+  private async requireAvailableTable(
+    tx: Prisma.TransactionClient,
+    tableId: number,
+    excludeOrderId?: number,
+  ) {
+    const table = await tx.diningTable.findUnique({
+      where: { id: tableId },
+      select: {
+        id: true,
+        name: true,
+        isActive: true,
+        orders: {
+          where: {
+            status: OrderStatus.OPEN,
+            ...(excludeOrderId && { id: { not: excludeOrderId } }),
+          },
+          select: { id: true },
+          take: 1,
+        },
+      },
+    });
+    if (!table) throw new NotFoundException('Restaurant table not found');
+    if (!table.isActive) throw new ConflictException('Restaurant table is inactive');
+    if (table.orders.length) {
+      throw new ConflictException('Restaurant table already has an open order');
+    }
+    return table;
+  }
+
   private async runSerializable<T>(
     callback: (tx: Prisma.TransactionClient) => Promise<T>,
   ) {
@@ -589,6 +690,14 @@ export class OrderService {
           isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
         });
       } catch (error) {
+        if (
+          error instanceof PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          throw new ConflictException(
+            'Restaurant table already has an open order',
+          );
+        }
         if (
           !(error instanceof PrismaClientKnownRequestError) ||
           error.code !== 'P2034'

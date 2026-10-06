@@ -4,6 +4,7 @@ import type {
   MenuProduct,
   Order,
   OrderStatus,
+  OrderType,
   OrderSummary,
   PaginatedResponse,
 } from "@restaurant-management/shared";
@@ -13,6 +14,8 @@ export interface OrderListQuery {
   page?: number;
   limit?: number;
   status?: OrderStatus;
+  orderType?: OrderType;
+  tableId?: number;
   createdById?: number;
   dateFrom?: string;
   dateTo?: string;
@@ -36,12 +39,16 @@ export interface OrderDiscountInput {
 }
 
 export interface CreateOrderInput {
+  orderType: OrderType;
+  tableId?: number | null;
   items: Omit<OrderItemInput, "id">[];
   discount?: OrderDiscountInput | null;
   taxPercent?: string;
 }
 
 export interface UpdateOrderInput {
+  orderType?: OrderType;
+  tableId?: number | null;
   items?: OrderItemInput[];
   discount?: OrderDiscountInput | null;
   taxPercent?: string;

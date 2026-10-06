@@ -52,6 +52,11 @@ enum OrderStatus {
   CANCELLED
 }
 
+enum OrderType {
+  DINE_IN
+  TAKEAWAY
+}
+
 enum DiscountType {
   FIXED_AMOUNT
   PERCENT
@@ -290,12 +295,31 @@ model ProductImage {
   @@map("product_images")
 }
 
+model DiningTable {
+  id Int @id @default(autoincrement())
+
+  name      String   @db.VarChar(50)
+  capacity  Int?
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders Order[]
+
+  @@index([isActive, sortOrder, name])
+  @@map("restaurant_tables")
+}
+
 model Order {
   id Int @id @default(autoincrement())
 
+  tableId     Int?
   createdById Int
   updatedById Int
 
+  orderType      OrderType
+  tableName      String?       @db.VarChar(50)
   status         OrderStatus   @default(OPEN)
   subtotal       Decimal       @default(0) @db.Decimal(14, 2)
   discountType   DiscountType?
@@ -310,11 +334,14 @@ model Order {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  createdBy User        @relation("OrderCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
-  updatedBy User        @relation("OrderUpdatedBy", fields: [updatedById], references: [id], onDelete: Restrict)
+  table     DiningTable? @relation(fields: [tableId], references: [id], onDelete: Restrict)
+  createdBy User         @relation("OrderCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  updatedBy User         @relation("OrderUpdatedBy", fields: [updatedById], references: [id], onDelete: Restrict)
   items     OrderItem[]
 
   @@index([status, createdAt])
+  @@index([orderType, createdAt])
+  @@index([tableId, createdAt])
   @@index([createdById, createdAt])
   @@map("orders")
 }

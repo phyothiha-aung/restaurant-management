@@ -1,5 +1,5 @@
 import { createZodDto } from 'nestjs-zod';
-import { DiscountType } from '../../generated/prisma/enums.js';
+import { DiscountType, OrderType } from '../../generated/prisma/enums.js';
 import { z } from '../../common/lib/zod.js';
 import { OrderMoneySchema, OrderPercentSchema } from './order-validation.js';
 
@@ -47,16 +47,35 @@ export const OrderDiscountSchema = z
     }
   });
 
-export const CreateOrderSchema = z.object({
-  items: z
-    .array(
-      OrderItemFieldsSchema.omit({ id: true }).superRefine(
-        validateUniqueAddons,
-      ),
-    )
-    .min(1),
-  discount: OrderDiscountSchema.optional().nullable(),
-  taxPercent: OrderPercentSchema.default('0'),
-});
+export const CreateOrderSchema = z
+  .object({
+    orderType: z.enum(OrderType),
+    tableId: z.number().int().positive().optional().nullable(),
+    items: z
+      .array(
+        OrderItemFieldsSchema.omit({ id: true }).superRefine(
+          validateUniqueAddons,
+        ),
+      )
+      .min(1),
+    discount: OrderDiscountSchema.optional().nullable(),
+    taxPercent: OrderPercentSchema.default('0'),
+  })
+  .superRefine((value, context) => {
+    if (value.orderType === OrderType.DINE_IN && !value.tableId) {
+      context.addIssue({
+        code: 'custom',
+        path: ['tableId'],
+        message: 'A table is required for dine-in orders',
+      });
+    }
+    if (value.orderType === OrderType.TAKEAWAY && value.tableId != null) {
+      context.addIssue({
+        code: 'custom',
+        path: ['tableId'],
+        message: 'Takeaway orders cannot have a table',
+      });
+    }
+  });
 
 export class CreateOrderDto extends createZodDto(CreateOrderSchema) {}

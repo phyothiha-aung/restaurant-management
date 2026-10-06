@@ -23,7 +23,9 @@ export type ExpenseCategory =
 
 export type ExpenseStatus = "ACTIVE" | "VOIDED";
 export type OrderStatus = "OPEN" | "COMPLETED" | "CANCELLED";
+export type OrderType = "DINE_IN" | "TAKEAWAY";
 export type DiscountType = "FIXED_AMOUNT" | "PERCENT";
+export type DiningTableStatus = "AVAILABLE" | "OCCUPIED" | "INACTIVE";
 export type StoredFilePurpose = "EXPENSE" | "RECIPE" | "PRODUCT";
 export type StoredFileStatus = "PENDING" | "READY" | "REJECTED";
 
@@ -216,6 +218,27 @@ export interface OrderUserSummary {
   name: string;
 }
 
+export interface DiningTableSummary {
+  id: number;
+  name: string;
+  capacity: number | null;
+  isActive: boolean;
+}
+
+export interface DiningTableOpenOrder {
+  id: number;
+  totalAmount: string;
+  createdAt: string;
+}
+
+export interface DiningTable extends DiningTableSummary {
+  sortOrder: number;
+  status: DiningTableStatus;
+  openOrder: DiningTableOpenOrder | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface OrderItemAddon {
   orderItemId: number;
   addonId: number;
@@ -241,8 +264,11 @@ export interface OrderItem {
 
 export interface OrderSummary {
   id: number;
+  tableId: number | null;
   createdById: number;
   updatedById: number;
+  orderType: OrderType;
+  tableName: string | null;
   status: OrderStatus;
   subtotal: string;
   discountType: DiscountType | null;
@@ -255,6 +281,7 @@ export interface OrderSummary {
   cancelledAt: string | null;
   createdAt: string;
   updatedAt: string;
+  table: DiningTableSummary | null;
   createdBy: OrderUserSummary;
   updatedBy: OrderUserSummary;
   itemCount: number;

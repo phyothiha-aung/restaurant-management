@@ -9,6 +9,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
 import { toast } from "react-toastify";
 import { getApiErrorMessage } from "../../lib/api-error";
+import { diningTableKeys } from "../dining-table/dining-table-services";
 import {
   cancelOrder,
   completeOrder,
@@ -61,6 +62,7 @@ const storeOrder = async (
 ) => {
   queryClient.setQueryData(orderKeys.detail(order.id), order);
   await queryClient.invalidateQueries({ queryKey: orderKeys.lists() });
+  await queryClient.invalidateQueries({ queryKey: diningTableKeys.all });
 };
 
 export const useCreateOrder = (options: OrderMutationOptions = {}) => {
