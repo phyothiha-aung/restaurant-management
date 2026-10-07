@@ -53,6 +53,18 @@ describe('storage constants', () => {
     ).toContain('development/products/two/');
   });
 
+  it('stores restaurant logos under the controlled restaurant prefix', () => {
+    expect(
+      buildObjectKey({
+        environment: 'development',
+        purpose: StoredFilePurpose.RESTAURANT_LOGO,
+        fileId: 'logo-id',
+        fileName: '../Ann Htike Logo.webp',
+        mimeType: 'image/webp',
+      }),
+    ).toBe('development/restaurant/logo-id/Ann-Htike-Logo.webp');
+  });
+
   it('rejects unsupported MIME types', () => {
     expect(() =>
       buildObjectKey({

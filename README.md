@@ -124,6 +124,8 @@ The API uses one configured IANA timezone for business-day boundaries and report
 
 The public `GET /api/config` endpoint exposes receipt-safe restaurant identity, timezone, and receipt defaults so the frontend can format timestamps and branding consistently. Owners and administrators can update these values from the Settings page, while managers have read-only access.
 
+Settings may also contain one private S3-backed restaurant logo. The application refreshes its short-lived signed display URL automatically and falls back to `apps/web/public/icon.jpg` when no logo is configured or S3 access is temporarily unavailable.
+
 ## Permissions
 
 | Capability | Managers | Cashier / Waiter | Chef |

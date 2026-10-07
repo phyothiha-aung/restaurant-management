@@ -5,6 +5,7 @@ export type AppConfig = {
   restaurantAddress: string | null;
   restaurantPhone: string | null;
   restaurantTaxId: string | null;
+  restaurantLogoUrl: string | null;
   timeZone: string;
   receiptFooter: string | null;
   receiptPaperWidth: ReceiptPaperWidth;
@@ -19,6 +20,13 @@ export interface RestaurantSettings {
   timeZone: string;
   receiptFooter: string | null;
   receiptPaperWidth: ReceiptPaperWidth;
+  logo: {
+    fileId: string;
+    originalName: string;
+    mimeType: string;
+    sizeBytes: number;
+  } | null;
+  logoUrl: string | null;
   createdAt: string;
   updatedAt: string;
   updatedBy: { id: number; name: string } | null;
@@ -62,7 +70,7 @@ export type OrderStatus = "OPEN" | "COMPLETED" | "CANCELLED";
 export type OrderType = "DINE_IN" | "TAKEAWAY";
 export type DiscountType = "FIXED_AMOUNT" | "PERCENT";
 export type DiningTableStatus = "AVAILABLE" | "OCCUPIED" | "INACTIVE";
-export type StoredFilePurpose = "EXPENSE" | "RECIPE" | "PRODUCT";
+export type StoredFilePurpose = "EXPENSE" | "RECIPE" | "PRODUCT" | "RESTAURANT_LOGO";
 export type StoredFileStatus = "PENDING" | "READY" | "REJECTED";
 
 export interface ApiSuccessResponse<T> {

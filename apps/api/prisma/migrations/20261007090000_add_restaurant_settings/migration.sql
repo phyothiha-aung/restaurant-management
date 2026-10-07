@@ -1,3 +1,5 @@
+ALTER TYPE "StoredFilePurpose" ADD VALUE 'RESTAURANT_LOGO';
+
 CREATE TABLE "restaurant_settings" (
     "id" INTEGER NOT NULL DEFAULT 1,
     "name" VARCHAR(100) NOT NULL,
@@ -8,6 +10,7 @@ CREATE TABLE "restaurant_settings" (
     "receiptFooter" VARCHAR(300),
     "receiptPaperWidth" INTEGER NOT NULL DEFAULT 80,
     "updatedById" INTEGER,
+    "logoFileId" TEXT,
     "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMPTZ(3) NOT NULL,
 
@@ -17,7 +20,12 @@ CREATE TABLE "restaurant_settings" (
 );
 
 CREATE INDEX "restaurant_settings_updatedById_idx" ON "restaurant_settings"("updatedById");
+CREATE UNIQUE INDEX "restaurant_settings_logoFileId_key" ON "restaurant_settings"("logoFileId");
 
 ALTER TABLE "restaurant_settings"
 ADD CONSTRAINT "restaurant_settings_updatedById_fkey"
 FOREIGN KEY ("updatedById") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+ALTER TABLE "restaurant_settings"
+ADD CONSTRAINT "restaurant_settings_logoFileId_fkey"
+FOREIGN KEY ("logoFileId") REFERENCES "stored_files"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

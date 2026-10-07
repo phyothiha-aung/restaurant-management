@@ -9,6 +9,7 @@ describe('AppConfigController', () => {
       restaurantAddress: null,
       restaurantPhone: null,
       restaurantTaxId: null,
+      restaurantLogoUrl: null,
       timeZone: 'Asia/Yangon',
       receiptFooter: null,
       receiptPaperWidth: 80 as const,

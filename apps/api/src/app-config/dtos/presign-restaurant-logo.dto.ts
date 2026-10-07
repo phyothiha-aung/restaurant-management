@@ -1,12 +1,11 @@
 import { createZodDto } from 'nestjs-zod';
-import { StoredFilePurpose } from '../../generated/prisma/enums.js';
 import { z } from '../../common/lib/zod.js';
 import {
   ALLOWED_IMAGE_TYPES,
   MAX_UPLOAD_SIZE,
 } from '../../storage/storage.constants.js';
 
-export const PresignProductImageSchema = z.object({
+export const PresignRestaurantLogoSchema = z.object({
   fileName: z.string().trim().min(1).max(255),
   mimeType: z.enum(
     Object.keys(ALLOWED_IMAGE_TYPES) as [
@@ -15,9 +14,8 @@ export const PresignProductImageSchema = z.object({
     ],
   ),
   sizeBytes: z.number().int().positive().max(MAX_UPLOAD_SIZE),
-  purpose: z.enum(StoredFilePurpose),
 });
 
-export class PresignProductImageDto extends createZodDto(
-  PresignProductImageSchema,
+export class PresignRestaurantLogoDto extends createZodDto(
+  PresignRestaurantLogoSchema,
 ) {}

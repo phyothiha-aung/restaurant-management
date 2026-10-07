@@ -7,7 +7,7 @@ import { useAppConfig } from "../../features/app-config/app-config-context";
 
 export function AppShell() {
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
-  const { restaurantName } = useAppConfig();
+  const { restaurantName, restaurantLogoUrl } = useAppConfig();
 
   return (
     <div className="min-h-screen bg-surface text-ink">
@@ -36,7 +36,7 @@ export function AppShell() {
           <div className="flex items-center gap-2.5">
             <img
               className="h-9 w-9 rounded-full border border-brand-gold object-cover"
-              src="/icon.jpg"
+              src={restaurantLogoUrl ?? "/icon.jpg"}
               alt=""
             />
             <span className="font-heading text-lg font-bold">{restaurantName}</span>

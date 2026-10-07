@@ -10,7 +10,7 @@ import { useAppConfig } from "../features/app-config/app-config-context";
 export function LoginPage() {
   const navigate = useNavigate();
   const login = useLogin();
-  const { restaurantName } = useAppConfig();
+  const { restaurantName, restaurantLogoUrl } = useAppConfig();
   const form = useForm<LoginType>({
     resolver: zodResolver(LoginSchema),
     defaultValues: { email: "", password: "" },
@@ -29,7 +29,7 @@ export function LoginPage() {
           <div className="inline-flex items-center gap-3">
             <img
               className="h-13 w-13 rounded-full border-2 border-brand-gold bg-white object-cover shadow-lg"
-              src="/icon.jpg"
+              src={restaurantLogoUrl ?? "/icon.jpg"}
               alt={`${restaurantName} logo`}
             />
             <div>

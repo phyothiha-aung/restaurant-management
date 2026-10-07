@@ -100,11 +100,19 @@ export class StorageService {
   }
 
   async retainObject(objectKey: string) {
+    await this.setRetention(objectKey, 'retained');
+  }
+
+  async markPendingObject(objectKey: string) {
+    await this.setRetention(objectKey, 'pending');
+  }
+
+  private async setRetention(objectKey: string, value: 'pending' | 'retained') {
     await this.client.send(
       new PutObjectTaggingCommand({
         Bucket: this.bucket,
         Key: objectKey,
-        Tagging: { TagSet: [{ Key: 'retention', Value: 'retained' }] },
+        Tagging: { TagSet: [{ Key: 'retention', Value: value }] },
       }),
     );
   }

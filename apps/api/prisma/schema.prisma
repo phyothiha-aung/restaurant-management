@@ -66,6 +66,7 @@ enum StoredFilePurpose {
   EXPENSE
   RECIPE
   PRODUCT
+  RESTAURANT_LOGO
 }
 
 enum StoredFileStatus {
@@ -132,10 +133,12 @@ model RestaurantSettings {
   receiptPaperWidth Int     @default(80)
 
   updatedById Int?
+  logoFileId  String?  @unique
   createdAt   DateTime @default(now()) @db.Timestamptz(3)
   updatedAt   DateTime @updatedAt @db.Timestamptz(3)
 
-  updatedBy User? @relation("RestaurantSettingsUpdatedBy", fields: [updatedById], references: [id], onDelete: Restrict)
+  updatedBy User?       @relation("RestaurantSettingsUpdatedBy", fields: [updatedById], references: [id], onDelete: Restrict)
+  logo      StoredFile? @relation(fields: [logoFileId], references: [id], onDelete: Restrict)
 
   @@index([updatedById])
   @@map("restaurant_settings")
@@ -186,9 +189,10 @@ model StoredFile {
   createdAt    DateTime          @default(now()) @db.Timestamptz(3)
   updatedAt    DateTime          @updatedAt @db.Timestamptz(3)
 
-  uploadedBy        User               @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
-  expenseAttachment ExpenseAttachment?
-  productImage      ProductImage?
+  uploadedBy             User                @relation(fields: [uploadedById], references: [id], onDelete: Restrict)
+  expenseAttachment      ExpenseAttachment?
+  productImage           ProductImage?
+  restaurantSettingsLogo RestaurantSettings?
 
   @@index([uploadedById, status])
   @@index([status, expiresAt])

@@ -29,7 +29,7 @@ interface SidebarProps {
 
 export function Sidebar({ onNavigate, onClose }: SidebarProps) {
   const user = useAuthStore((state) => state.user);
-  const { restaurantName } = useAppConfig();
+  const { restaurantName, restaurantLogoUrl } = useAppConfig();
 
   if (!user) return null;
 
@@ -91,7 +91,7 @@ export function Sidebar({ onNavigate, onClose }: SidebarProps) {
       <div className="flex h-20 items-center gap-3 border-b border-line-soft px-5">
         <img
           className="h-11 w-11 rounded-full border-2 border-brand-gold object-cover"
-          src="/icon.jpg"
+          src={restaurantLogoUrl ?? "/icon.jpg"}
           alt={`${restaurantName} logo`}
         />
         <div className="min-w-0 flex-1">

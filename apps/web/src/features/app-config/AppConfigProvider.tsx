@@ -7,7 +7,9 @@ export function AppConfigProvider({ children }: { children: ReactNode }) {
   const query = useQuery({
     queryKey: appConfigKey,
     queryFn: getAppConfig,
-    staleTime: Infinity,
+    staleTime: 4 * 60 * 1000,
+    refetchInterval: (current) =>
+      current.state.data?.restaurantLogoUrl ? 4 * 60 * 1000 : false,
     retry: 1,
   });
 

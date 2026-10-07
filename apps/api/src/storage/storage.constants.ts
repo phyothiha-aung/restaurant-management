@@ -13,10 +13,17 @@ export const ALLOWED_FILE_TYPES = {
   'application/pdf': 'pdf',
 } as const;
 
+export const ALLOWED_IMAGE_TYPES = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+} as const;
+
 const PURPOSE_PREFIX: Record<StoredFilePurpose, string> = {
   EXPENSE: 'expenses',
   RECIPE: 'recipes',
   PRODUCT: 'products',
+  RESTAURANT_LOGO: 'restaurant',
 };
 
 export type AllowedMimeType = keyof typeof ALLOWED_FILE_TYPES;

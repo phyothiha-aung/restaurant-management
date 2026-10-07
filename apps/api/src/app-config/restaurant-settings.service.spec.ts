@@ -13,6 +13,7 @@ const record = {
   createdAt: new Date('2026-10-07T00:00:00Z'),
   updatedAt: new Date('2026-10-07T01:00:00Z'),
   updatedBy: null,
+  logo: null,
 };
 
 describe('RestaurantSettingsService', () => {
@@ -20,12 +21,13 @@ describe('RestaurantSettingsService', () => {
     const prisma: any = {
       restaurantSettings: { findUnique: vi.fn().mockResolvedValue(record) },
     };
-    const service = new RestaurantSettingsService(prisma);
+    const service = new RestaurantSettingsService(prisma, {} as any);
     await expect(service.getPublicConfig()).resolves.toEqual({
       restaurantName: 'Ann Htike',
       restaurantAddress: null,
       restaurantPhone: null,
       restaurantTaxId: null,
+      restaurantLogoUrl: null,
       timeZone: 'Asia/Yangon',
       receiptFooter: null,
       receiptPaperWidth: 80,
@@ -42,7 +44,7 @@ describe('RestaurantSettingsService', () => {
         }),
       },
     };
-    const service = new RestaurantSettingsService(prisma);
+    const service = new RestaurantSettingsService(prisma, {} as any);
     const result = await service.update(
       { name: 'New name' } as any,
       { sub: 7 } as any,
@@ -65,7 +67,7 @@ describe('RestaurantSettingsService', () => {
       restaurantSettings: { findUnique: vi.fn().mockResolvedValue(null) },
     };
     await expect(
-      new RestaurantSettingsService(prisma).onModuleInit(),
+      new RestaurantSettingsService(prisma, {} as any).onModuleInit(),
     ).rejects.toThrow('npm run seed');
   });
 });

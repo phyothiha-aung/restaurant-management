@@ -6,6 +6,7 @@ import { Card } from "../components/ui/Card";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { PageHeader } from "../components/ui/PageHeader";
 import { RestaurantSettingsForm } from "../features/settings/components/RestaurantSettingsForm";
+import { RestaurantLogoField } from "../features/settings/components/RestaurantLogoField";
 import {
   useRestaurantSettings,
   useUpdateRestaurantSettings,
@@ -63,12 +64,15 @@ export function SettingsPage() {
             </div>
           )}
           <Card className="p-5 sm:p-7">
+            <RestaurantLogoField settings={query.data} canEdit={canEdit} />
+            <div className="pt-6">
             <RestaurantSettingsForm
               settings={query.data}
               canEdit={canEdit}
               isLoading={mutation.isPending}
               onSubmit={submit}
             />
+            </div>
           </Card>
           <Card className="flex flex-col gap-3 p-5 text-sm sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2 text-muted">
