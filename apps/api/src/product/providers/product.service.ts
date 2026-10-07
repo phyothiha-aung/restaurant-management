@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
@@ -13,6 +14,7 @@ import type { Prisma } from '../../generated/prisma/client.js';
 import { PrismaService } from '../../prisma/prisma.service.js';
 import { PermissionProvider } from '../../user/providers/permission.provider.js';
 import { UserService } from '../../user/providers/user.service.js';
+import { StorageService } from '../../storage/storage.service.js';
 import type {
   CreateProductDto,
   ProductAddonAssignmentSchema,
@@ -117,6 +119,7 @@ const menuSelect = {
           mimeType: true,
           sizeBytes: true,
           status: true,
+          objectKey: true,
         },
       },
     },
@@ -132,11 +135,14 @@ type AddonAssignmentInput = z.infer<typeof ProductAddonAssignmentSchema>;
 
 @Injectable()
 export class ProductService {
+  private readonly logger = new Logger(ProductService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly pagination: PaginationProvider,
     private readonly permission: PermissionProvider,
     private readonly users: UserService,
+    private readonly storage: StorageService,
   ) {}
 
   async findAll(
@@ -353,7 +359,7 @@ export class ProductService {
         { name: 'asc' },
       ],
     });
-    return products.map((product) => this.toMenuProduct(product));
+    return Promise.all(products.map((product) => this.toMenuProduct(product)));
   }
 
   private validateVariantPayload(variants: VariantInput[]) {
@@ -502,10 +508,32 @@ export class ProductService {
     };
   }
 
-  private toMenuProduct(product: MenuProductRecord) {
-    const { addonAssignments, variants, ...base } = product;
+  private async toMenuProduct(product: MenuProductRecord) {
+    const { addonAssignments, variants, image, ...base } = product;
+    let imageUrl: string | null = null;
+    if (image) {
+      try {
+        imageUrl = (await this.storage.createAccessUrl(image.file)).url;
+      } catch (error) {
+        this.logger.warn(
+          `Could not create a signed image URL for product ${product.id}: ${error instanceof Error ? error.message : 'unknown error'}`,
+        );
+      }
+    }
     return {
       ...base,
+      image: image
+        ? {
+            ...image,
+            file: {
+              originalName: image.file.originalName,
+              mimeType: image.file.mimeType,
+              sizeBytes: image.file.sizeBytes,
+              status: image.file.status,
+            },
+          }
+        : null,
+      imageUrl,
       variants: variants.map((variant) => ({
         ...variant,
         price: variant.price.toString(),

@@ -282,6 +282,7 @@ export interface MenuProduct {
   variants: MenuProductVariant[];
   addons: MenuProductAddon[];
   image: ProductImage | null;
+  imageUrl: string | null;
 }
 
 export interface Addon {

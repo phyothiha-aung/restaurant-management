@@ -82,7 +82,9 @@ const createService = () => {
   };
   const users: any = { requireUser: vi.fn().mockResolvedValue(actor) };
   return {
-    service: new ProductService(prisma, pagination, permission, users),
+    service: new ProductService(prisma, pagination, permission, users, {
+      createAccessUrl: vi.fn(),
+    } as any),
     prisma,
     permission,
   };

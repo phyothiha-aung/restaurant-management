@@ -38,9 +38,15 @@ export function ProductImagePicker({ currentUrl, currentName, disabled, onChange
 
   return (
     <div className="grid gap-3">
-      <div><p className="text-xs font-bold text-ink">Product image</p><p className="mt-1 text-xs text-muted">Optional JPEG, PNG, or WebP up to 10 MB.</p></div>
+      <div>
+        <p className="text-xs font-bold text-ink">Product image</p>
+        <p className="mt-1 text-xs text-muted">
+          Optional JPEG, PNG, or WebP up to 10 MB. Use a 16:9 image for
+          the best result; other aspect ratios will be cropped to fill product cards.
+        </p>
+      </div>
       <div className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4 sm:flex-row sm:items-center">
-        <div className="grid h-28 w-full shrink-0 place-items-center overflow-hidden rounded-xl border border-line bg-white sm:w-36">
+        <div className="aspect-video grid w-full shrink-0 place-items-center overflow-hidden rounded-xl border border-line bg-white sm:w-48">
           {preview ? <img className="h-full w-full object-cover" src={preview} alt="Product preview" /> : <ImagePlus className="text-muted" size={28} />}
         </div>
         <div className="flex-1">
