@@ -1,6 +1,38 @@
+export type ReceiptPaperWidth = 58 | 80;
+
 export type AppConfig = {
+  restaurantName: string;
+  restaurantAddress: string | null;
+  restaurantPhone: string | null;
+  restaurantTaxId: string | null;
   timeZone: string;
+  receiptFooter: string | null;
+  receiptPaperWidth: ReceiptPaperWidth;
 };
+
+export interface RestaurantSettings {
+  id: number;
+  name: string;
+  address: string | null;
+  phone: string | null;
+  taxId: string | null;
+  timeZone: string;
+  receiptFooter: string | null;
+  receiptPaperWidth: ReceiptPaperWidth;
+  createdAt: string;
+  updatedAt: string;
+  updatedBy: { id: number; name: string } | null;
+}
+
+export interface UpdateRestaurantSettingsInput {
+  name?: string;
+  address?: string | null;
+  phone?: string | null;
+  taxId?: string | null;
+  timeZone?: string;
+  receiptFooter?: string | null;
+  receiptPaperWidth?: ReceiptPaperWidth;
+}
 
 export type UserRole =
   | "SUPERADMIN"

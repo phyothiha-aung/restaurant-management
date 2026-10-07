@@ -18,6 +18,7 @@ import { canManageUsers, formatRole } from "../lib/user-display";
 import { useAuthStore } from "../store/useAuthStore";
 import { useProfile } from "../features/profile/profile-services";
 import { getApiErrorMessage } from "../lib/api-error";
+import { useAppConfig } from "../features/app-config/app-config-context";
 
 export function OverviewPage() {
   const storedUser = useAuthStore((state) => state.user);
@@ -26,6 +27,7 @@ export function OverviewPage() {
   const profileQuery = useProfile();
   const user = profileQuery.data ?? storedUser;
   const navigate = useNavigate();
+  const { restaurantName } = useAppConfig();
 
   useEffect(() => {
     if (profileQuery.data && token) {
@@ -43,7 +45,7 @@ export function OverviewPage() {
       <PageHeader
         eyebrow="Overview"
         title={`Welcome back, ${firstName}`}
-        description="Everything you need to get started with your Ann Htike workspace."
+        description={`Everything you need to get started with your ${restaurantName} workspace.`}
         action={<Badge tone="gold">{formatRole(user.role)}</Badge>}
       />
 
@@ -77,7 +79,7 @@ export function OverviewPage() {
             Your workspace
           </p>
           <h2 className="mt-3 font-heading text-2xl font-bold sm:text-3xl">
-            Ann Htike restaurant operations
+            {restaurantName} restaurant operations
           </h2>
           <p className="mt-3 max-w-xl text-sm leading-6 text-white/75">
             Manage orders, the central menu, team access, and restaurant records from one place.

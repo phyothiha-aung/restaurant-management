@@ -8,6 +8,7 @@ import {
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/client';
 import type { Request } from 'express';
 import { BusinessTimeService } from '../../app-config/business-time.service.js';
+import { RestaurantSettingsService } from '../../app-config/restaurant-settings.service.js';
 import { ActiveUserDto } from '../../auth/dtos/active-user.dto.js';
 import { PaginationProvider } from '../../common/pagination/providers/pagination.provider.js';
 import {
@@ -146,6 +147,7 @@ export class OrderService {
     private readonly pagination: PaginationProvider,
     private readonly users: UserService,
     private readonly businessTime: BusinessTimeService,
+    private readonly restaurantSettings: RestaurantSettingsService,
   ) {}
 
   async findAll(
@@ -160,13 +162,17 @@ export class OrderService {
     if (query.tableId) filters.push({ tableId: query.tableId });
     if (query.createdById) filters.push({ createdById: query.createdById });
     if (query.dateFrom || query.dateTo) {
+      const timeZone = await this.restaurantSettings.getTimeZone();
       filters.push({
         createdAt: {
           ...(query.dateFrom && {
-            gte: this.businessTime.startOfBusinessDate(query.dateFrom),
+            gte: this.businessTime.startOfBusinessDate(query.dateFrom, timeZone),
           }),
           ...(query.dateTo && {
-            lt: this.businessTime.endExclusiveOfBusinessDate(query.dateTo),
+            lt: this.businessTime.endExclusiveOfBusinessDate(
+              query.dateTo,
+              timeZone,
+            ),
           }),
         },
       });

@@ -122,7 +122,7 @@ This is an operational MVP report, not a complete accounting statement. It does 
 
 The API uses one configured IANA timezone for business-day boundaries and reporting. Timestamp values are stored as PostgreSQL `TIMESTAMPTZ` instants and returned as ISO-8601 UTC strings. Calendar-only expense dates remain PostgreSQL `DATE` values and do not shift with the browser timezone.
 
-The public `GET /api/config` endpoint exposes the configured timezone so the frontend can format timestamps consistently.
+The public `GET /api/config` endpoint exposes receipt-safe restaurant identity, timezone, and receipt defaults so the frontend can format timestamps and branding consistently. Owners and administrators can update these values from the Settings page, while managers have read-only access.
 
 ## Permissions
 
@@ -211,7 +211,7 @@ Seed the initial superadmin:
 npm run seed
 ```
 
-The seed creates or updates a superadmin only when `SUPERADMIN_NAME`, `SUPERADMIN_EMAIL`, and `SUPERADMIN_PASSWORD` are configured.
+The seed initializes the singleton restaurant settings from `RESTAURANT_NAME` and `RESTAURANT_TIME_ZONE` without overwriting later UI edits. It also creates or updates a superadmin when `SUPERADMIN_NAME`, `SUPERADMIN_EMAIL`, and `SUPERADMIN_PASSWORD` are configured.
 
 Start both applications from the repository root:
 
@@ -231,6 +231,7 @@ Use the checked-in `.env.example` files as the source of truth. The main API var
 | `DATABASE_URL` | PostgreSQL connection URL |
 | `PORT` | API port; defaults to `3001` |
 | `FRONTEND_URL` | Allowed frontend CORS origin |
+| `RESTAURANT_NAME` | Initial restaurant name used by the seed |
 | `RESTAURANT_TIME_ZONE` | Required IANA timezone, such as `Asia/Yangon` |
 | `JWT_SECRET` | JWT signing secret |
 | `JWT_TOKEN_AUDIENCE` | Expected JWT audience |

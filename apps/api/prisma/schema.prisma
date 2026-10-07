@@ -105,18 +105,40 @@ model User {
   updatedAt   DateTime  @updatedAt @db.Timestamptz(3)
   verifiedAt  DateTime? @db.Timestamptz(3)
 
-  refreshTokens   RefreshToken[]
-  createdExpenses Expense[]           @relation("ExpenseCreatedBy")
-  updatedExpenses Expense[]           @relation("ExpenseUpdatedBy")
-  voidedExpenses  Expense[]           @relation("ExpenseVoidedBy")
-  uploadedFiles   StoredFile[]
-  attachedFiles   ExpenseAttachment[]
-  productImages   ProductImage[]
-  createdOrders   Order[]             @relation("OrderCreatedBy")
-  updatedOrders   Order[]             @relation("OrderUpdatedBy")
+  refreshTokens             RefreshToken[]
+  createdExpenses           Expense[]            @relation("ExpenseCreatedBy")
+  updatedExpenses           Expense[]            @relation("ExpenseUpdatedBy")
+  voidedExpenses            Expense[]            @relation("ExpenseVoidedBy")
+  uploadedFiles             StoredFile[]
+  attachedFiles             ExpenseAttachment[]
+  productImages             ProductImage[]
+  createdOrders             Order[]              @relation("OrderCreatedBy")
+  updatedOrders             Order[]              @relation("OrderUpdatedBy")
+  updatedRestaurantSettings RestaurantSettings[] @relation("RestaurantSettingsUpdatedBy")
 
   @@index([role, status])
   @@map("users")
+}
+
+model RestaurantSettings {
+  id Int @id @default(1)
+
+  name              String  @db.VarChar(100)
+  address           String? @db.VarChar(300)
+  phone             String? @db.VarChar(30)
+  taxId             String? @db.VarChar(50)
+  timeZone          String  @db.VarChar(100)
+  receiptFooter     String? @db.VarChar(300)
+  receiptPaperWidth Int     @default(80)
+
+  updatedById Int?
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+
+  updatedBy User? @relation("RestaurantSettingsUpdatedBy", fields: [updatedById], references: [id], onDelete: Restrict)
+
+  @@index([updatedById])
+  @@map("restaurant_settings")
 }
 
 model Expense {

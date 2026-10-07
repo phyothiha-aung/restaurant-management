@@ -23,6 +23,7 @@ export default z.object({
   DATABASE_URL: z.string().min(1),
 
   FRONTEND_URL: z.url().default('http://localhost:3000'),
+  RESTAURANT_NAME: z.string().trim().min(2).max(100),
   RESTAURANT_TIME_ZONE: z
     .string()
     .min(1)

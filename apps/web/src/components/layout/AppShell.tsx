@@ -3,9 +3,11 @@ import { useState } from "react";
 import { Outlet } from "react-router";
 import { Sidebar } from "./Sidebar";
 import { Button } from "../ui/Button";
+import { useAppConfig } from "../../features/app-config/app-config-context";
 
 export function AppShell() {
   const [isNavigationOpen, setIsNavigationOpen] = useState(false);
+  const { restaurantName } = useAppConfig();
 
   return (
     <div className="min-h-screen bg-surface text-ink">
@@ -37,7 +39,7 @@ export function AppShell() {
               src="/icon.jpg"
               alt=""
             />
-            <span className="font-heading text-lg font-bold">Ann Htike</span>
+            <span className="font-heading text-lg font-bold">{restaurantName}</span>
           </div>
           <Button
             className="h-10 w-10 px-0"

@@ -8,6 +8,7 @@ const baseEnvironment = {
   JWT_TOKEN_ISSUER: 'restaurant-api',
   AWS_REGION: 'ap-southeast-1',
   AWS_S3_BUCKET: 'restaurant-files',
+  RESTAURANT_NAME: 'Ann Htike',
   RESTAURANT_TIME_ZONE: 'Asia/Yangon',
 };
 

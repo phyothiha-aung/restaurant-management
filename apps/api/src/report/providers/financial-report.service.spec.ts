@@ -8,7 +8,6 @@ const createService = (transactionResult: unknown[]) => {
   };
   const users: any = { requireUser: vi.fn().mockResolvedValue({ id: 1 }) };
   const businessTime: any = {
-    timeZone: 'Asia/Yangon',
     currentBusinessDate: vi.fn().mockReturnValue('2026-10-06'),
     firstDateOfMonth: vi.fn().mockReturnValue('2026-10-01'),
     startOfBusinessDate: vi.fn().mockReturnValue(new Date('2026-09-30T17:30:00Z')),
@@ -19,11 +18,15 @@ const createService = (transactionResult: unknown[]) => {
       '2026-10-03',
     ]),
   };
+  const restaurantSettings: any = {
+    getTimeZone: vi.fn().mockResolvedValue('Asia/Yangon'),
+  };
   return {
-    service: new FinancialReportService(prisma, users, businessTime),
+    service: new FinancialReportService(prisma, users, businessTime, restaurantSettings),
     prisma,
     users,
     businessTime,
+    restaurantSettings,
   };
 };
 

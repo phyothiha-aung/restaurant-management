@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { getAppConfig } from "./app-config-api";
+import { appConfigKey, getAppConfig } from "./app-config-api";
 import { AppConfigContext } from "./app-config-context";
 
 export function AppConfigProvider({ children }: { children: ReactNode }) {
   const query = useQuery({
-    queryKey: ["app-config"],
+    queryKey: appConfigKey,
     queryFn: getAppConfig,
     staleTime: Infinity,
     retry: 1,

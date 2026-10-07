@@ -1,6 +1,7 @@
 // prisma/seed.ts
 import { NestFactory } from '@nestjs/core';
 import { seedSuperadmin } from './seeds/seed-superadmin.js';
+import { seedRestaurantSettings } from './seeds/seed-restaurant-settings.js';
 import { SeedModule } from './seed.module.js';
 
 async function main() {
@@ -9,6 +10,7 @@ async function main() {
   try {
     console.log('🌱 Seeding started...');
 
+    await seedRestaurantSettings(app);
     await seedSuperadmin(app);
 
     console.log('Seeding completed');

@@ -32,7 +32,7 @@ import { formatDateOnly, getBusinessDate } from "../lib/date-format";
 type Preset = "today" | "week" | "month" | "30-days";
 
 export function ReportsPage() {
-  const { timeZone } = useAppConfig();
+  const { timeZone, restaurantName } = useAppConfig();
   const [params, setParams] = useSearchParams();
   const today = useMemo(() => getBusinessDate(timeZone), [timeZone]);
   const fallback = currentMonthRange(today);
@@ -72,7 +72,7 @@ export function ReportsPage() {
       <PageHeader
         eyebrow="Financial performance"
         title="Reports"
-        description="Track completed sales, operating expenses, and profit for Ann Htike."
+        description={`Track completed sales, operating expenses, and profit for ${restaurantName}.`}
       />
 
       <Card className="p-4 sm:p-5">

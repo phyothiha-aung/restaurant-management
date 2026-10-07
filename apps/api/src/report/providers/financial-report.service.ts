@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { FinancialReport } from '@restaurant-management/shared';
 import { BusinessTimeService } from '../../app-config/business-time.service.js';
+import { RestaurantSettingsService } from '../../app-config/restaurant-settings.service.js';
 import { ActiveUserDto } from '../../auth/dtos/active-user.dto.js';
 import { Prisma } from '../../generated/prisma/client.js';
 import {
@@ -55,6 +56,7 @@ export class FinancialReportService {
     private readonly prisma: PrismaService,
     private readonly users: UserService,
     private readonly businessTime: BusinessTimeService,
+    private readonly restaurantSettings: RestaurantSettingsService,
   ) {}
 
   async getFinancialReport(
@@ -62,12 +64,12 @@ export class FinancialReportService {
     activeUser: ActiveUserDto,
   ): Promise<FinancialReport> {
     await this.users.requireUser(activeUser.sub);
-    const today = this.businessTime.currentBusinessDate();
+    const timeZone = await this.restaurantSettings.getTimeZone();
+    const today = this.businessTime.currentBusinessDate(timeZone);
     const dateFrom = query.dateFrom ?? this.businessTime.firstDateOfMonth(today);
     const dateTo = query.dateTo ?? today;
-    const start = this.businessTime.startOfBusinessDate(dateFrom);
-    const end = this.businessTime.endExclusiveOfBusinessDate(dateTo);
-    const timeZone = this.businessTime.timeZone;
+    const start = this.businessTime.startOfBusinessDate(dateFrom, timeZone);
+    const end = this.businessTime.endExclusiveOfBusinessDate(dateTo, timeZone);
 
     const [orderRows, expenseRows, dailyOrders, dailyExpenses, expenseCategories, orderTypes, topProducts] =
       await this.prisma.$transaction(

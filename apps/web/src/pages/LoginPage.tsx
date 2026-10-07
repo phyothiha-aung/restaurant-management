@@ -5,10 +5,12 @@ import { useNavigate } from "react-router";
 import { Button } from "../components/ui/Button";
 import { useLogin } from "../features/auth/auth-services";
 import { LoginSchema, type LoginType } from "../lib/validations/login-schema";
+import { useAppConfig } from "../features/app-config/app-config-context";
 
 export function LoginPage() {
   const navigate = useNavigate();
   const login = useLogin();
+  const { restaurantName } = useAppConfig();
   const form = useForm<LoginType>({
     resolver: zodResolver(LoginSchema),
     defaultValues: { email: "", password: "" },
@@ -28,10 +30,10 @@ export function LoginPage() {
             <img
               className="h-13 w-13 rounded-full border-2 border-brand-gold bg-white object-cover shadow-lg"
               src="/icon.jpg"
-              alt="Ann Htike logo"
+              alt={`${restaurantName} logo`}
             />
             <div>
-              <p className="font-heading text-xl font-bold leading-none sm:text-2xl">Ann Htike</p>
+              <p className="font-heading text-xl font-bold leading-none sm:text-2xl">{restaurantName}</p>
               <p className="mt-1 text-[0.66rem] font-extrabold uppercase tracking-[0.16em] text-brand-gold-pale">
                 Restaurant management
               </p>
@@ -45,7 +47,7 @@ export function LoginPage() {
               Keep your restaurant team connected.
             </h1>
             <p className="mt-6 max-w-md text-base leading-7 text-white/75">
-              Manage people, orders, expenses, and the menu for Ann Htike from one simple place.
+              Manage people, orders, expenses, and the menu for {restaurantName} from one simple place.
             </p>
             <div className="mt-9 space-y-3 text-sm font-semibold text-white/85">
               {["Clear role-based access", "Simple order management", "Built for daily restaurant work"].map(
@@ -61,7 +63,7 @@ export function LoginPage() {
             </div>
           </div>
           <p className="mt-8 hidden text-xs tracking-wide text-white/55 lg:block">
-            Ann Htike · Restaurant operations
+            {restaurantName} · Restaurant operations
           </p>
         </div>
       </section>
@@ -73,7 +75,7 @@ export function LoginPage() {
               Welcome back
             </p>
             <h2 className="font-heading text-3xl font-bold leading-tight tracking-tight text-ink">
-              Sign in to Ann Htike
+              Sign in to {restaurantName}
             </h2>
             <p className="mt-3 text-sm text-muted">
               Use your staff account to continue to the restaurant workspace.

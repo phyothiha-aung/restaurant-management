@@ -9,6 +9,7 @@ import {
   ShoppingCart,
   Armchair,
   ChartNoAxesCombined,
+  Settings,
 } from "lucide-react";
 import { NavLink } from "react-router";
 import { logout } from "../../features/auth/auth-services";
@@ -19,6 +20,7 @@ import {
 } from "../../lib/user-display";
 import { useAuthStore } from "../../store/useAuthStore";
 import { Button } from "../ui/Button";
+import { useAppConfig } from "../../features/app-config/app-config-context";
 
 interface SidebarProps {
   onNavigate?: () => void;
@@ -27,6 +29,7 @@ interface SidebarProps {
 
 export function Sidebar({ onNavigate, onClose }: SidebarProps) {
   const user = useAuthStore((state) => state.user);
+  const { restaurantName } = useAppConfig();
 
   if (!user) return null;
 
@@ -74,6 +77,12 @@ export function Sidebar({ onNavigate, onClose }: SidebarProps) {
       icon: UtensilsCrossed,
       visible: canManageUsers(user.role),
     },
+    {
+      to: "/settings",
+      label: "Settings",
+      icon: Settings,
+      visible: canManageUsers(user.role),
+    },
     { to: "/profile", label: "My Profile", icon: UserRound, visible: true },
   ];
 
@@ -83,11 +92,11 @@ export function Sidebar({ onNavigate, onClose }: SidebarProps) {
         <img
           className="h-11 w-11 rounded-full border-2 border-brand-gold object-cover"
           src="/icon.jpg"
-          alt="Ann Htike logo"
+          alt={`${restaurantName} logo`}
         />
         <div className="min-w-0 flex-1">
           <p className="truncate font-heading text-lg font-bold leading-tight text-ink">
-            Ann Htike
+            {restaurantName}
           </p>
           <p className="text-[0.68rem] font-bold uppercase tracking-[0.12em] text-brand-red">
             Restaurant
