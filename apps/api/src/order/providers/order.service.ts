@@ -108,6 +108,17 @@ type OrderDetailRecord = Prisma.OrderGetPayload<{
   select: typeof orderDetailSelect;
 }>;
 type CurrentItem = OrderDetailRecord['items'][number];
+type OrderMutationRecord = Pick<
+  OrderDetailRecord,
+  | 'id'
+  | 'status'
+  | 'orderType'
+  | 'tableId'
+  | 'tableName'
+  | 'discountType'
+  | 'discountValue'
+  | 'taxPercent'
+> & { items: CurrentItem[] };
 
 const money = (value: Prisma.Decimal) => value.toFixed(2);
 const toOrderSummary = (order: OrderSummaryRecord) => {
@@ -231,10 +242,7 @@ export class OrderService {
     const actor = await this.requireOperator(activeUser.sub);
     await this.requireOrder(id);
     const orderId = await this.runSerializable(async (tx) => {
-      const current = await tx.order.findUnique({
-        where: { id },
-        select: orderDetailSelect,
-      });
+      const current = await this.loadOrderForUpdate(tx, id);
       if (!current) throw new NotFoundException('Order not found');
       if (current.status !== OrderStatus.OPEN) {
         throw new ConflictException('Only open orders can be updated');
@@ -323,7 +331,7 @@ export class OrderService {
 
   private async replaceItems(
     tx: Prisma.TransactionClient,
-    order: OrderDetailRecord,
+    order: OrderMutationRecord,
     inputs: ItemInput[],
   ) {
     const currentById = new Map(order.items.map((item) => [item.id, item]));
@@ -350,9 +358,19 @@ export class OrderService {
     for (const input of inputs) {
       if (!input.id) {
         const item = await this.buildNewItem(tx, input);
-        await tx.orderItem.create({
-          data: { orderId: order.id, ...item.data },
+        const { addons, ...itemData } = item.data;
+        const created = await tx.orderItem.create({
+          data: { orderId: order.id, ...itemData },
+          select: { id: true },
         });
+        if (addons.create.length > 0) {
+          await tx.orderItemAddon.createMany({
+            data: addons.create.map((addon) => ({
+              ...addon,
+              orderItemId: created.id,
+            })),
+          });
+        }
         continue;
       }
       const current = currentById.get(input.id)!;
@@ -372,10 +390,102 @@ export class OrderService {
           baseSubtotal: item.baseSubtotal,
           addonTotal: item.addonTotal,
           lineTotal: item.lineTotal,
-          addons: { create: item.addons },
         },
       });
+      if (item.addons.length > 0) {
+        await tx.orderItemAddon.createMany({
+          data: item.addons.map((addon) => ({
+            ...addon,
+            orderItemId: current.id,
+          })),
+        });
+      }
     }
+  }
+
+  private async loadOrderForUpdate(
+    tx: Prisma.TransactionClient,
+    orderId: number,
+  ): Promise<OrderMutationRecord | null> {
+    const order = await tx.order.findUnique({
+      where: { id: orderId },
+      select: {
+        id: true,
+        status: true,
+        orderType: true,
+        tableId: true,
+        tableName: true,
+        discountType: true,
+        discountValue: true,
+        taxPercent: true,
+      },
+    });
+    if (!order) return null;
+
+    const items = await tx.orderItem.findMany({
+      where: { orderId },
+      orderBy: { id: 'asc' },
+      select: {
+        id: true,
+        orderId: true,
+        productVariantId: true,
+        productName: true,
+        variantName: true,
+        unitPrice: true,
+        quantity: true,
+        baseSubtotal: true,
+        addonTotal: true,
+        lineTotal: true,
+      },
+    });
+    const itemIds = items.map((item) => item.id);
+    const variantIds = items.map((item) => item.productVariantId);
+    const addons = itemIds.length
+      ? await tx.orderItemAddon.findMany({
+          where: { orderItemId: { in: itemIds } },
+          orderBy: { addonName: 'asc' },
+          select: {
+            orderItemId: true,
+            addonId: true,
+            addonName: true,
+            unitPrice: true,
+            quantity: true,
+            totalAmount: true,
+          },
+        })
+      : [];
+    const variants = variantIds.length
+      ? await tx.productVariant.findMany({
+          where: { id: { in: variantIds } },
+          select: { id: true, productId: true },
+        })
+      : [];
+    const productIdByVariant = new Map(
+      variants.map((variant) => [variant.id, variant.productId]),
+    );
+    const addonsByItem = new Map<number, typeof addons>();
+    for (const addon of addons) {
+      const values = addonsByItem.get(addon.orderItemId) ?? [];
+      values.push(addon);
+      addonsByItem.set(addon.orderItemId, values);
+    }
+
+    return {
+      ...order,
+      items: items.map((item) => {
+        const productId = productIdByVariant.get(item.productVariantId);
+        if (!productId) {
+          throw new ConflictException(
+            'An order item references an unavailable product variant',
+          );
+        }
+        return {
+          ...item,
+          productVariant: { productId },
+          addons: addonsByItem.get(item.id) ?? [],
+        };
+      }),
+    };
   }
 
   private async buildNewItem(
@@ -625,7 +735,7 @@ export class OrderService {
 
   private async resolveUpdateAssignment(
     tx: Prisma.TransactionClient,
-    current: OrderDetailRecord,
+    current: OrderMutationRecord,
     dto: UpdateOrderDto,
   ) {
     const targetType = dto.orderType ?? current.orderType;

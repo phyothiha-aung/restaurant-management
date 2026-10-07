@@ -122,6 +122,98 @@ describe('OrderService calculations and permissions', () => {
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
+  it('updates item add-ons with sequential transaction queries', async () => {
+    const { service } = createService();
+    const tx: any = {
+      productAddon: { findMany: vi.fn().mockResolvedValue([]) },
+      orderItemAddon: {
+        deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
+        createMany: vi.fn().mockResolvedValue({ count: 1 }),
+      },
+      orderItem: { update: vi.fn().mockResolvedValue({ id: 4 }) },
+    };
+    const order: any = {
+      id: 2,
+      items: [
+        {
+          id: 4,
+          productVariantId: 10,
+          productName: 'Tea',
+          variantName: 'Regular',
+          unitPrice: new Prisma.Decimal('1000'),
+          productVariant: { productId: 5 },
+          addons: [
+            {
+              addonId: 20,
+              addonName: 'Milk',
+              unitPrice: new Prisma.Decimal('100'),
+              quantity: 1,
+            },
+          ],
+        },
+      ],
+    };
+
+    await (service as any).replaceItems(tx, order, [
+      {
+        id: 4,
+        productVariantId: 10,
+        quantity: 2,
+        addons: [{ addonId: 20, quantity: 1 }],
+      },
+    ]);
+
+    expect(tx.orderItem.update).toHaveBeenCalledWith({
+      where: { id: 4 },
+      data: expect.not.objectContaining({ addons: expect.anything() }),
+    });
+    expect(tx.orderItemAddon.createMany).toHaveBeenCalledWith({
+      data: [expect.objectContaining({ orderItemId: 4, addonId: 20 })],
+    });
+    expect(tx.orderItem.update.mock.invocationCallOrder[0]).toBeLessThan(
+      tx.orderItemAddon.createMany.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('loads editable order state through sequential transaction reads', async () => {
+    const { service } = createService();
+    const tx: any = {
+      order: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 2,
+          status: 'OPEN',
+          orderType: OrderType.TAKEAWAY,
+          tableId: null,
+          tableName: null,
+          discountType: null,
+          discountValue: new Prisma.Decimal('0'),
+          taxPercent: new Prisma.Decimal('0'),
+        }),
+      },
+      orderItem: { findMany: vi.fn().mockResolvedValue([]) },
+      orderItemAddon: { findMany: vi.fn() },
+      productVariant: { findMany: vi.fn() },
+    };
+
+    await expect(
+      (service as any).loadOrderForUpdate(tx, 2),
+    ).resolves.toMatchObject({ id: 2, items: [] });
+
+    expect(tx.order.findUnique).toHaveBeenCalledWith({
+      where: { id: 2 },
+      select: expect.not.objectContaining({
+        items: expect.anything(),
+        createdBy: expect.anything(),
+        updatedBy: expect.anything(),
+      }),
+    });
+    expect(tx.order.findUnique.mock.invocationCallOrder[0]).toBeLessThan(
+      tx.orderItem.findMany.mock.invocationCallOrder[0],
+    );
+    expect(tx.orderItemAddon.findMany).not.toHaveBeenCalled();
+    expect(tx.productVariant.findMany).not.toHaveBeenCalled();
+  });
+
   it('captures the table name for a dine-in order', async () => {
     const { service } = createService();
     const tx: any = {
